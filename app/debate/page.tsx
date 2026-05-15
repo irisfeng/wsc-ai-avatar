@@ -203,7 +203,15 @@ export default function DebatePage() {
   return (
     <main className="grid h-screen grid-cols-1 md:grid-cols-[1fr_minmax(420px,_36rem)]">
       <section className="relative h-[40vh] bg-gradient-to-b from-sky-950/60 to-wsc-ink md:h-screen">
-        <Live2DStage expression={expression} className="absolute inset-0" />
+        {/* soft glow behind the avatar — rendered first so it sits underneath */}
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_38%_55%,rgba(76,201,240,0.12),transparent_55%)]" />
+        <Live2DStage
+          expression={expression}
+          className="absolute inset-0"
+          anchorX={0.42}
+          anchorY={0.6}
+          scale={0.82}
+        />
         <Link
           href="/"
           className="absolute left-4 top-4 inline-flex items-center gap-1 rounded-full bg-black/40 px-3 py-1.5 text-xs text-white/80 backdrop-blur hover:bg-black/60"

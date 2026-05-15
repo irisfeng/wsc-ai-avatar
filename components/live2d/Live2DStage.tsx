@@ -18,6 +18,16 @@ interface Live2DStageProps {
   className?: string;
   expression?: string;
   onReady?: () => void;
+  /**
+   * Horizontal anchor inside the stage. 0 = left edge, 0.5 = centred,
+   * 1 = right edge. Default 0.5. The debate page sets this to ~0.4 so
+   * the model sits slightly left of centre, clear of the chat panel.
+   */
+  anchorX?: number;
+  /** Vertical anchor. 0 = top, 0.5 = centre, 1 = bottom. Default 0.55 (slightly low). */
+  anchorY?: number;
+  /** Multiplier on the fit-to-stage scale. 0.85 default — leaves margin. */
+  scale?: number;
 }
 
 declare global {
@@ -39,11 +49,27 @@ export function Live2DStage({
   modelUrl = DEFAULT_MODEL,
   className,
   expression,
-  onReady
+  onReady,
+  anchorX = 0.5,
+  anchorY = 0.55,
+  scale: scaleMul = 0.85
 }: Live2DStageProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMsg, setErrorMsg] = useState<string>('');
+  // Keep latest layout knobs in refs so fit() (created once per mount) sees
+  // up-to-date values when the props change.
+  const anchorXRef = useRef(anchorX);
+  const anchorYRef = useRef(anchorY);
+  const scaleMulRef = useRef(scaleMul);
+  anchorXRef.current = anchorX;
+  anchorYRef.current = anchorY;
+  scaleMulRef.current = scaleMul;
+  const fitRef = useRef<(() => void) | null>(null);
+  // Re-fit whenever positional props change.
+  useEffect(() => {
+    fitRef.current?.();
+  }, [anchorX, anchorY, scaleMul]);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,6 +89,7 @@ export function Live2DStage({
 
         if (cancelled || !canvasRef.current) return;
 
+        const parentEl = canvasRef.current.parentElement;
         const application = new PIXI.Application({
           view: canvasRef.current,
           autoStart: true,
@@ -70,7 +97,9 @@ export function Live2DStage({
           antialias: true,
           resolution: window.devicePixelRatio || 1,
           autoDensity: true,
-          resizeTo: canvasRef.current.parentElement || undefined
+          width: parentEl?.clientWidth ?? window.innerWidth,
+          height: parentEl?.clientHeight ?? window.innerHeight,
+          resizeTo: parentEl || undefined
         });
         app = application;
 
@@ -84,25 +113,55 @@ export function Live2DStage({
         // bundled .d.ts diverges — cast through `unknown` to silence TS only.
         (application.stage.addChild as (child: unknown) => void)(model);
 
+        type Renderer = { width: number; height: number; resolution: number };
+        type Positionable = {
+          width: number;
+          height: number;
+          scale: { set(v: number): void; x: number; y: number };
+          x: number;
+          y: number;
+        };
+
         const fit = () => {
-          const w = (application.renderer as { width: number }).width;
-          const h = (application.renderer as { height: number }).height;
-          const m = model as PIXIDisplayObject & {
-            width: number;
-            height: number;
-            scale: { set(v: number): void };
-            x: number;
-            y: number;
-            anchor: { set(x: number, y: number): void };
-          };
-          const scale = Math.min(w / m.width, h / m.height) * 0.95;
-          m.scale.set(scale);
-          m.anchor?.set?.(0.5, 0.5);
-          m.x = w / 2;
-          m.y = h / 2 + h * 0.05;
+          const r = application.renderer as unknown as Renderer;
+          // renderer.width is in physical pixels; we want layout px so we
+          // divide out resolution (Pixi v7, autoDensity=true).
+          const w = r.width / r.resolution;
+          const h = r.height / r.resolution;
+          const m = model as unknown as Positionable;
+
+          // Reset scale before reading natural size — otherwise width/height
+          // would reflect the previous scale and the fit calculation drifts
+          // on consecutive calls.
+          m.scale.set(1);
+          const naturalW = m.width;
+          const naturalH = m.height;
+          if (naturalW <= 0 || naturalH <= 0) return;
+
+          const fitScale =
+            Math.min(w / naturalW, h / naturalH) * scaleMulRef.current;
+          m.scale.set(fitScale);
+
+          const scaledW = naturalW * fitScale;
+          const scaledH = naturalH * fitScale;
+
+          // Live2DModel ignores `anchor.set()` (it's not a Sprite). Use the
+          // computed offset instead so the model is positioned by its
+          // visual centre, not its top-left corner.
+          m.x = (w - scaledW) * anchorXRef.current;
+          m.y = (h - scaledH) * anchorYRef.current;
         };
         fit();
+        fitRef.current = fit;
         window.addEventListener('resize', fit);
+        // Re-fit when the parent container resizes (responsive grid).
+        const ro =
+          parentEl && typeof ResizeObserver !== 'undefined'
+            ? new ResizeObserver(() => fit())
+            : null;
+        ro?.observe(parentEl as Element);
+        // Stash the observer on the app so the cleanup teardown can stop it.
+        (application as unknown as { __ro?: ResizeObserver | null }).__ro = ro;
 
         // Expose control surface
         window.__wscLive2D = {
@@ -175,14 +234,18 @@ export function Live2DStage({
     return () => {
       cancelled = true;
       try {
-        (app as { destroy?: (a: boolean, b: object) => void } | null)?.destroy?.(true, {
-          children: true,
-          texture: true,
-          baseTexture: true
-        });
+        const a = app as
+          | ({
+              destroy?: (a: boolean, b: object) => void;
+              __ro?: ResizeObserver | null;
+            })
+          | null;
+        a?.__ro?.disconnect();
+        a?.destroy?.(true, { children: true, texture: true, baseTexture: true });
       } catch {
         /* noop */
       }
+      fitRef.current = null;
       delete window.__wscLive2D;
     };
   }, [modelUrl, onReady]);
