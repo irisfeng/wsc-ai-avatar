@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowLeft, NotebookPen } from 'lucide-react';
 import { useState } from 'react';
 import { SAMPLE_MOTIONS } from '@/lib/prompts';
+import { streamChat } from '@/components/chat/streamClient';
 
 export default function PrepPage() {
   const [motion, setMotion] = useState(SAMPLE_MOTIONS[0]);
@@ -17,23 +18,21 @@ export default function PrepPage() {
     setBusy(true);
     setError('');
     setOutput('');
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: 'prep',
-          messages: [{ role: 'user', content: `Motion: ${m}` }]
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'prep failed');
-      setOutput(String(data.content || ''));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'unknown error');
-    } finally {
-      setBusy(false);
-    }
+    let acc = '';
+    await streamChat(
+      {
+        mode: 'prep',
+        messages: [{ role: 'user', content: `Motion: ${m}` }]
+      },
+      {
+        onDelta: (d) => {
+          acc += d;
+          setOutput(acc);
+        },
+        onError: (err) => setError(err.message)
+      }
+    );
+    setBusy(false);
   }
 
   return (

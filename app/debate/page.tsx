@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ArrowLeft, Mic, Send, Square } from 'lucide-react';
 import type { ChatMessage } from '@/lib/llm';
 import type { DebateSide } from '@/lib/prompts';
@@ -10,6 +10,7 @@ import { SAMPLE_MOTIONS } from '@/lib/prompts';
 import { parseDebaterReply } from '@/lib/parseEmotion';
 import { useMic } from '@/components/chat/useMic';
 import { fetchTTS } from '@/components/chat/ttsClient';
+import { streamChat } from '@/components/chat/streamClient';
 import { useAudioMouth } from '@/components/live2d/useLipSync';
 import { ChatMessages } from '@/components/chat/ChatMessages';
 
@@ -25,9 +26,12 @@ export default function DebatePage() {
   const [expression, setExpression] = useState<string | undefined>(undefined);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [streaming, setStreaming] = useState(''); // partial AI reply (raw, pre-parse)
   const [poi, setPoi] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>('');
+  const [provider, setProvider] = useState<string | undefined>();
+  const abortRef = useRef<AbortController | null>(null);
 
   const mic = useMic('en-US');
   const { play } = useAudioMouth();
@@ -38,47 +42,65 @@ export default function DebatePage() {
     setBusy(true);
     setError('');
     setPoi(undefined);
+    setStreaming('');
     const nextHistory = [...messages, userMsg];
     setMessages(nextHistory);
     setInput('');
 
+    abortRef.current?.abort();
+    const ctl = new AbortController();
+    abortRef.current = ctl;
+
+    let raw = '';
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      await streamChat(
+        {
           mode: 'opponent',
           messages: nextHistory,
           context: { motion, userSide, round }
-        })
-      });
-      const data = (await res.json()) as { content?: string; error?: string };
-      if (!res.ok) throw new Error(data.error || 'chat failed');
-      const parsed = parseDebaterReply(data.content || '');
-      const aiMsg: ChatMessage = {
-        role: 'assistant',
-        content: parsed.text
-      };
-      setMessages([...nextHistory, aiMsg]);
-      setPoi(parsed.poi);
-      if (parsed.emotion) setExpression(parsed.emotion);
+        },
+        {
+          signal: ctl.signal,
+          onMeta: (m) => setProvider(`${m.provider}/${m.model}`),
+          onDelta: (delta) => {
+            raw += delta;
+            setStreaming(raw);
+          },
+          onError: (err) => setError(err.message)
+        }
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'stream failed');
+    }
 
-      // TTS + lip sync (best-effort; if TTS fails we still show text)
+    // Stream finished — parse and finalise.
+    const parsed = parseDebaterReply(raw);
+    if (parsed.text) {
+      setMessages([...nextHistory, { role: 'assistant', content: parsed.text }]);
+    }
+    setPoi(parsed.poi);
+    if (parsed.emotion) setExpression(parsed.emotion);
+    setStreaming('');
+    setBusy(false);
+
+    // TTS speaks the full text after streaming completes (Edge-TTS needs full
+    // sentence for prosody). Best-effort: failure does not break the turn.
+    if (parsed.text) {
       try {
         const speakText = parsed.poi
           ? `${parsed.text}\nPoint of Information: ${parsed.poi}`
           : parsed.text;
         const blob = await fetchTTS(speakText);
-        await play(blob);
+        await play(blob, { expression: parsed.emotion });
       } catch (ttsErr) {
         // eslint-disable-next-line no-console
         console.warn('TTS skipped:', ttsErr);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'unknown error');
-    } finally {
-      setBusy(false);
     }
+  }
+
+  function stopStreaming() {
+    abortRef.current?.abort();
   }
 
   function toggleMic() {
@@ -146,17 +168,22 @@ export default function DebatePage() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-4">
-          {messages.length === 0 ? (
+          {messages.length === 0 && !streaming ? (
             <p className="text-sm text-white/40">
               点击麦克风或在下方输入你的第一段发言。AI 数字人将以对方辩手身份回应。
             </p>
           ) : (
-            <ChatMessages messages={messages} poi={poi} />
+            <ChatMessages messages={messages} poi={poi} streaming={streaming} />
           )}
           {error && <p className="mt-3 text-xs text-wsc-accent">{error}</p>}
           {mic.listening && (
             <p className="mt-3 text-xs text-wsc-calm">
               录音中… {mic.interim || '(开始说话)'}
+            </p>
+          )}
+          {provider && (
+            <p className="mt-3 font-mono text-[10px] text-white/30">
+              powered by {provider}
             </p>
           )}
         </div>
@@ -180,6 +207,17 @@ export default function DebatePage() {
               {mic.listening ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
               {mic.listening ? 'Stop' : 'Mic'}
             </button>
+            {busy && (
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={stopStreaming}
+                title="中断当前生成"
+              >
+                <Square className="h-4 w-4" />
+                Stop
+              </button>
+            )}
             <button
               type="button"
               className="btn-primary flex-1"
