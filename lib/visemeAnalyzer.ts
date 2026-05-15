@@ -40,8 +40,10 @@ export interface AnalyserFrame {
   fftSize: number;
 }
 
-const SILENCE_RMS = 0.012;
-const OPEN_GAIN = 4.5;
+const SILENCE_RMS = 0.005; // Edge-TTS mp3 sits ~0.05 RMS during speech;
+                            // 0.5 % captures whispers without floor noise.
+const OPEN_GAIN = 7.0;     // Maps typical 0.04–0.14 RMS up to a strong
+                            // 0.28–1.0 ParamMouthOpenY range.
 /** Sharpness of the vowel Gaussian — smaller = more peaky weights. */
 const VOWEL_SHARPNESS = 0.08;
 

@@ -149,7 +149,7 @@ export default function DebatePage() {
     ttsQueueRef.current?.abort();
     const ctl = new AbortController();
     abortRef.current = ctl;
-    const ttsQueue = new SentenceTtsQueue();
+    const ttsQueue = new SentenceTtsQueue({ voice: avatar.voice });
     ttsQueueRef.current = ttsQueue;
     sentenceCursorRef.current = 0;
 

@@ -6,27 +6,36 @@ import { analyseFrame, type VisemeWeights } from '@/lib/visemeAnalyzer';
 /**
  * Real-time lip-sync driver.
  *
- * Replaces the lipsyncpatch library's built-in amplitude-only mouth driver
- * (which collapses every sound into a single ParamMouthOpenY value and
- * applies a "min open = 0.4" clamp that looks like an on/off switch).
+ * The PREVIOUS implementation used `requestAnimationFrame` for writes,
+ * which runs AFTER Pixi's ticker. By then the InternalModel had already
+ * called `coreModel.update()` (which consumed the current param values
+ * to compute the mesh) AND `loadParameters()` (which restored the
+ * pre-write snapshot). So our writes either lagged a full frame OR
+ * were ignored, hence "mouth barely moves".
  *
- * Each frame:
- *   1. Pull a time + frequency domain snapshot from our AnalyserNode.
- *   2. analyseFrame() → 7 viseme weights (open, form, A/I/U/E/O).
- *   3. One-pole low-pass smooth.
- *   4. Write all 7 standard Cubism mouth params on the core model.
- *      trySet swallows "param doesn't exist" silently, so the same code
- *      drives Mao (ParamA + co.), Natori, Hiyori — anything Cubism-3+.
+ * CURRENT approach: subscribe to the InternalModel's `beforeModelUpdate`
+ * event. The lib emits this between expression/physics application and
+ * `coreModel.update()`, so our param writes are consumed in the SAME
+ * frame's render. After `loadParameters()` they're discarded — exactly
+ * what we want, because next frame we write fresh values.
  *
- * To win against the lib's own writer we set `model.lipSync = false`
- * before playback. Then the only writer of mouth params is us.
+ * The audio AnalyserNode is created once per playback (per Blob) and
+ * the handler closure reads from it every frame.
  */
 
 interface Core {
   setParameterValueById?: (id: string, value: number) => void;
+  addParameterValueById?: (id: string, value: number, weight?: number) => void;
+}
+interface EventEmitterLike {
+  on?: (event: string, fn: () => void) => void;
+  off?: (event: string, fn: () => void) => void;
+}
+interface InternalModelLike extends EventEmitterLike {
+  coreModel?: Core;
 }
 interface Live2DRef {
-  internalModel?: { coreModel?: Core };
+  internalModel?: InternalModelLike;
   lipSync?: boolean;
 }
 
@@ -40,8 +49,8 @@ const MOUTH_PARAMS = [
   'ParamO'
 ] as const;
 
-/** Higher = more responsive, lower = smoother. 0.45 ≈ ~50 ms 90% rise. */
-const SMOOTHING_ALPHA = 0.45;
+/** Higher = more responsive, lower = smoother. 0.55 ≈ ~40 ms 90% rise. */
+const SMOOTHING_ALPHA = 0.55;
 
 export function useAudioMouth() {
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -58,7 +67,6 @@ export function useAudioMouth() {
     return audioCtxRef.current;
   }
 
-  /** Unlock the AudioContext from inside a user-gesture handler. */
   async function prime(): Promise<boolean> {
     try {
       const ctx = getCtx();
@@ -83,22 +91,19 @@ export function useAudioMouth() {
   ): Promise<void> {
     await prime();
 
-    // Apply expression via the library (it owns expression-manager state).
     if (opts.expression) {
       window.__wscLive2D?.setExpression(opts.expression);
     }
 
-    // Take ownership of mouth params for the duration of this clip.
     const model = window.__wscLive2D?.model as Live2DRef | undefined;
     const previousLipSync = model?.lipSync;
     if (model) model.lipSync = false;
 
     const url = URL.createObjectURL(audioBlob);
     try {
-      await playWithViseme(url, getCtx(), model?.internalModel?.coreModel);
+      await playWithViseme(url, getCtx(), model);
     } finally {
       URL.revokeObjectURL(url);
-      // Restore the model's lip-sync setting in case anything else uses it.
       if (model && previousLipSync !== undefined) {
         model.lipSync = previousLipSync;
       }
@@ -111,7 +116,7 @@ export function useAudioMouth() {
 async function playWithViseme(
   url: string,
   ctx: AudioContext,
-  core: Core | undefined
+  model: Live2DRef | undefined
 ): Promise<void> {
   if (ctx.state === 'suspended') await ctx.resume();
 
@@ -121,8 +126,6 @@ async function playWithViseme(
   const source = ctx.createMediaElementSource(audio);
   const analyser = ctx.createAnalyser();
   analyser.fftSize = 2048;
-  // Internal smoothing on the analyser itself — gentle, because we
-  // do our own one-pole on top.
   analyser.smoothingTimeConstant = 0.15;
   source.connect(analyser);
   analyser.connect(ctx.destination);
@@ -130,7 +133,7 @@ async function playWithViseme(
   const timeData = new Uint8Array(analyser.fftSize);
   const freqData = new Float32Array(analyser.frequencyBinCount);
 
-  // smoothed viseme state
+  // Smoothed viseme state, persistent across frames for one-pole low-pass.
   let s: VisemeWeights = {
     open: 0,
     form: 0,
@@ -141,11 +144,14 @@ async function playWithViseme(
     o: 0
   };
 
-  let rafId: number | null = null;
-  let stopped = false;
+  const core = model?.internalModel?.coreModel;
+  const internalModel = model?.internalModel;
 
-  function tick() {
-    if (stopped) return;
+  // The handler runs INSIDE Pixi's ticker, right before coreModel.update().
+  // That timing is essential: writes here are used for the current frame's
+  // mesh computation, instead of being discarded by loadParameters().
+  const onBeforeModelUpdate = () => {
+    if (!core) return;
     analyser.getByteTimeDomainData(timeData);
     analyser.getFloatFrequencyData(freqData);
 
@@ -156,7 +162,6 @@ async function playWithViseme(
       fftSize: analyser.fftSize
     });
 
-    // One-pole low-pass smoothing per channel
     s = {
       open: lerp(s.open, v.open, SMOOTHING_ALPHA),
       form: lerp(s.form, v.form, SMOOTHING_ALPHA),
@@ -167,19 +172,33 @@ async function playWithViseme(
       o: lerp(s.o, v.o, SMOOTHING_ALPHA)
     };
 
-    if (core?.setParameterValueById) {
-      trySet(core, 'ParamMouthOpenY', s.open);
-      trySet(core, 'ParamMouthForm', s.form);
-      trySet(core, 'ParamA', s.a);
-      trySet(core, 'ParamI', s.i);
-      trySet(core, 'ParamU', s.u);
-      trySet(core, 'ParamE', s.e);
-      trySet(core, 'ParamO', s.o);
-    }
+    // Use addParameterValueById with weight=1.0 — same call the library
+    // itself uses (with weight 0.8) for lipSync. Acts like a SET because
+    // loadParameters() restores the snapshot at end-of-frame, so we re-
+    // write from scratch every frame.
+    writeParam(core, 'ParamMouthOpenY', s.open);
+    writeParam(core, 'ParamMouthForm', s.form);
+    writeParam(core, 'ParamA', s.a);
+    writeParam(core, 'ParamI', s.i);
+    writeParam(core, 'ParamU', s.u);
+    writeParam(core, 'ParamE', s.e);
+    writeParam(core, 'ParamO', s.o);
+  };
 
+  // rAF fallback for any platform where the InternalModel event isn't
+  // available — same handler, just a different scheduler. We still
+  // disable the lib lip-sync above so there's no double-write.
+  let rafId: number | null = null;
+  const useRafFallback = !internalModel?.on;
+  if (useRafFallback) {
+    const tick = () => {
+      onBeforeModelUpdate();
+      rafId = requestAnimationFrame(tick);
+    };
     rafId = requestAnimationFrame(tick);
+  } else {
+    internalModel?.on?.('beforeModelUpdate', onBeforeModelUpdate);
   }
-  rafId = requestAnimationFrame(tick);
 
   try {
     await new Promise<void>((resolve, reject) => {
@@ -188,19 +207,30 @@ async function playWithViseme(
       audio.play().catch(reject);
     });
   } finally {
-    stopped = true;
     if (rafId !== null) cancelAnimationFrame(rafId);
-    // Reset mouth to closed when playback ends so the avatar doesn't
-    // freeze mid-syllable on the next idle frame.
-    if (core?.setParameterValueById) {
-      for (const id of MOUTH_PARAMS) trySet(core, id, 0);
+    internalModel?.off?.('beforeModelUpdate', onBeforeModelUpdate);
+
+    // Reset mouth to closed once playback ends, otherwise the avatar
+    // freezes mid-syllable until the next clip plays.
+    if (core) {
+      for (const id of MOUTH_PARAMS) writeParam(core, id, 0);
     }
   }
 }
 
-function trySet(core: Core, id: string, value: number) {
+function writeParam(core: Core, id: string, value: number) {
+  const v = clamp01(value);
   try {
-    core.setParameterValueById?.(id, clamp01(value));
+    // SET — absolute override. Any expression "Add" contribution earlier
+    // in the frame on mouth params is overwritten, which is what we want
+    // (we own the mouth; expressions own eyes / eyebrows).
+    if (core.setParameterValueById) {
+      core.setParameterValueById(id, v);
+    } else if (core.addParameterValueById) {
+      // older / variant SDKs: weight-1 add is equivalent thanks to the
+      // loadParameters() reset at end-of-frame.
+      core.addParameterValueById(id, v, 1.0);
+    }
   } catch {
     /* parameter doesn't exist on this model — silent skip */
   }

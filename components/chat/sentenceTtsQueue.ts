@@ -17,9 +17,19 @@ import { fetchTTS } from '@/components/chat/ttsClient';
 
 type PlayFn = (blob: Blob) => Promise<void>;
 
+export interface TtsQueueOpts {
+  /** Edge-TTS voice id (e.g. 'en-US-AndrewNeural'). */
+  voice?: string;
+}
+
 export class SentenceTtsQueue {
   private chain: Promise<void> = Promise.resolve();
   private aborted = false;
+  private voice: string | undefined;
+
+  constructor(opts: TtsQueueOpts = {}) {
+    this.voice = opts.voice;
+  }
 
   /**
    * Enqueue a sentence to be synthesised and spoken.
@@ -32,7 +42,7 @@ export class SentenceTtsQueue {
 
     // Kick off the TTS request right now so the network round-trip
     // overlaps with the playback of the previous sentence.
-    const ttsPromise = fetchTTS(trimmed).catch((err) => {
+    const ttsPromise = fetchTTS(trimmed, { voice: this.voice }).catch((err) => {
       // eslint-disable-next-line no-console
       console.warn('[sentenceTtsQueue] TTS fetch failed:', err);
       return null;

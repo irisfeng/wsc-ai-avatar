@@ -87,6 +87,28 @@ for I in 00 01 02 03 04 05 06 07; do
     -o "$NATORI_DIR/motions/mtn_${I}.motion3.json"
 done
 
+# ─── Ren (male, slim/cool design, 5 expressions — new default male) ──
+REN_REPO="$SAMPLES_BASE/Ren"
+REN_DIR="$MODELS_DIR/Ren/runtime"
+echo "→ Downloading Ren sample model (male, modern look)…"
+mkdir -p "$REN_DIR/Ren.2048" "$REN_DIR/expressions" "$REN_DIR/motions"
+for FILE in Ren.model3.json Ren.moc3 Ren.physics3.json Ren.cdi3.json; do
+  echo "    $FILE"
+  curl -fsSL "$REN_REPO/$FILE" -o "$REN_DIR/$FILE"
+done
+echo "    Ren.2048/texture_00.png"
+curl -fsSL "$REN_REPO/Ren.2048/texture_00.png" -o "$REN_DIR/Ren.2048/texture_00.png"
+for I in 01 02 03 04 05; do
+  echo "    expressions/exp_${I}.exp3.json"
+  curl -fsSL "$REN_REPO/expressions/exp_${I}.exp3.json" \
+    -o "$REN_DIR/expressions/exp_${I}.exp3.json"
+done
+for I in 01 02 03; do
+  echo "    motions/mtn_${I}.motion3.json"
+  curl -fsSL "$REN_REPO/motions/mtn_${I}.motion3.json" \
+    -o "$REN_DIR/motions/mtn_${I}.motion3.json"
+done
+
 echo "✓ Live2D assets installed under $TARGET"
 echo "  Avatars: Mao (creative) · Natori (formal male) · Hiyori (junior peer)"
 echo "  Replace with your own licensed model for production use."

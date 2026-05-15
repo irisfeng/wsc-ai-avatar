@@ -6,7 +6,7 @@
 
 import type { ParsedSpeech } from '@/lib/parseEmotion';
 
-export type AvatarId = 'mao' | 'natori' | 'hiyori';
+export type AvatarId = 'ren' | 'mao' | 'natori' | 'hiyori';
 
 export interface AvatarConfig {
   id: AvatarId;
@@ -24,6 +24,11 @@ export interface AvatarConfig {
   /** scale multiplier on top of the fit-to-stage scale */
   scale: number;
   /**
+   * Edge-TTS voice id. Male avatars get a male voice, female get female.
+   * Browse: https://learn.microsoft.com/azure/ai-services/speech-service/language-support
+   */
+  voice: string;
+  /**
    * Map our LLM-emitted emotion words to this model's expression IDs.
    * The 9 keys below cover everything parseEmotion can return; missing
    * keys fall back to the 'neutral' entry.
@@ -32,6 +37,31 @@ export interface AvatarConfig {
 }
 
 export const AVATARS: Record<AvatarId, AvatarConfig> = {
+  // Ren — male, slim modern design, 5 expressions. The new default male
+  // since Natori's look proved divisive.
+  ren: {
+    id: 'ren',
+    label: 'Ren · 学者派',
+    blurb: 'WSC senior · scholar track',
+    emoji: '🎓',
+    modelUrl: '/live2d/models/Ren/runtime/Ren.model3.json',
+    anchorX: 0.5,
+    anchorY: -0.05,
+    scale: 2.0,
+    // Andrew is younger, warmer male voice — matches the modern look.
+    voice: 'en-US-AndrewNeural',
+    expressions: {
+      confident: 'exp_01',
+      thoughtful: 'exp_02',
+      surprised: 'exp_03',
+      amused: 'exp_01',
+      firm: 'exp_04',
+      happy: 'exp_01',
+      neutral: 'exp_01',
+      sad: 'exp_05',
+      angry: 'exp_04'
+    }
+  },
   // Mao — magical-artist character (witch hat, paint-splashed jacket).
   // 8 expressions (exp_01–08). Full-body sample; hard-zoom strategy lets
   // the desk surface in VideoCallScene replace her lower body.
@@ -44,6 +74,7 @@ export const AVATARS: Record<AvatarId, AvatarConfig> = {
     anchorX: 0.5,
     anchorY: -0.05,
     scale: 2.3,
+    voice: 'en-US-JennyNeural', // bright female, slightly playful
     expressions: {
       confident: 'exp_01',
       thoughtful: 'exp_05',
@@ -61,14 +92,15 @@ export const AVATARS: Record<AvatarId, AvatarConfig> = {
   // the strongest fit for a "senior debater" video-call opponent.
   natori: {
     id: 'natori',
-    label: 'Natori · 学者派',
-    blurb: 'WSC senior · scholar track',
+    label: 'Natori · 资深辩手',
+    blurb: 'WSC senior · veteran',
     emoji: '🎩',
     modelUrl: '/live2d/models/Natori/runtime/Natori.model3.json',
     // Crop tighter — call tile shows shoulders & head only (Pika-style).
     anchorX: 0.5,
     anchorY: -0.05,
     scale: 2.1,
+    voice: 'en-US-GuyNeural', // adult male, professional
     expressions: {
       confident: 'Smile',
       thoughtful: 'exp_01',
@@ -92,6 +124,7 @@ export const AVATARS: Record<AvatarId, AvatarConfig> = {
     anchorX: 0.5,
     anchorY: -0.05,
     scale: 2.0,
+    voice: 'en-US-AriaNeural', // clear female, slightly youthful
     // Hiyori sample ships with no .exp3.json files — expression() calls are no-ops.
     // Listed for type completeness only.
     expressions: {
@@ -109,12 +142,13 @@ export const AVATARS: Record<AvatarId, AvatarConfig> = {
 };
 
 export const AVATAR_LIST: AvatarConfig[] = [
-  AVATARS.natori,
+  AVATARS.ren,
   AVATARS.mao,
-  AVATARS.hiyori
+  AVATARS.hiyori,
+  AVATARS.natori
 ];
 
-export const DEFAULT_AVATAR_ID: AvatarId = 'natori';
+export const DEFAULT_AVATAR_ID: AvatarId = 'ren';
 
 /** Translate a LLM-emitted emotion word into the model's expression ID. */
 export function resolveExpression(
