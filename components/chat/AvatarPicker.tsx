@@ -23,35 +23,45 @@ export function AvatarPicker({ value, onChange, disabled = false, className }: P
   return (
     <div
       className={cn(
-        'pointer-events-auto inline-flex items-center gap-0.5 rounded-full border p-0.5 text-[11px] backdrop-blur-md transition-opacity duration-300',
+        'inline-flex items-center gap-0.5 rounded-full border p-0.5 text-[11px] backdrop-blur-md transition-opacity duration-300',
+        // The single source of truth for "can users interact":
+        //   disabled === false → pointer-events-auto + full opacity
+        //   disabled === true  → pointer-events-none + 50% opacity + not-allowed cursor
+        // Using a hard CSS pointer-events-none belt-AND-suspenders the
+        // native `disabled` attribute, so even synthetic events,
+        // touch-tap libraries, or stray click-through behaviour can't
+        // reach the buttons mid-speech.
         disabled
-          ? 'border-white/[0.05] opacity-50 cursor-not-allowed'
-          : 'border-white/[0.10] text-white/85',
+          ? 'pointer-events-none opacity-50 cursor-not-allowed border-white/[0.05]'
+          : 'pointer-events-auto border-white/[0.10] text-white/85',
         className
       )}
       style={{
         background:
           'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)'
       }}
-      // surface the reason to assistive tech + plain hover
       aria-disabled={disabled}
       title={title}
     >
       {AVATAR_LIST.map((a) => {
         const active = value === a.id;
-        // The currently-selected chip is always non-clickable (no-op), but
-        // we DON'T grey it out — losing the visual marker mid-call is
-        // worse than the redundancy.
         const lockedOut = disabled && !active;
         return (
           <button
             key={a.id}
             type="button"
-            onClick={() => {
-              if (lockedOut || active) return;
+            onClick={(e) => {
+              // Defence-in-depth: even if pointer-events somehow leaked,
+              // the click handler itself short-circuits.
+              if (lockedOut || disabled || active) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+              }
               onChange(a.id);
             }}
             disabled={lockedOut}
+            tabIndex={lockedOut ? -1 : 0}
             aria-pressed={active}
             aria-disabled={lockedOut || undefined}
             className={cn(
