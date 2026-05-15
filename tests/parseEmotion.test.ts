@@ -81,4 +81,69 @@ describe('parseDebaterReply', () => {
     expect(out.emotion).toBeUndefined();
     expect(out.text).toBe('Speech body.');
   });
+
+  // ─── E1: tolerance for malformed emotion tags from weaker models ──
+
+  it('handles bare-tag form <thoughtful></thoughtful>', () => {
+    // This is the actual Qwen2.5:14b output bug we saw in the screenshot.
+    const out = parseDebaterReply(
+      "Firstly, ... Secondly, ...\nPOI: Could you elaborate?\n<thoughtful></thoughtful>"
+    );
+    expect(out.emotion).toBe('thoughtful');
+    expect(out.poi).toBe('Could you elaborate?');
+    expect(out.text).toBe('Firstly, ... Secondly, ...');
+    expect(out.text).not.toContain('<');
+  });
+
+  it('handles self-closing bare-tag form <amused/>', () => {
+    const out = parseDebaterReply('Speech.\n<amused/>');
+    expect(out.emotion).toBe('amused');
+    expect(out.text).toBe('Speech.');
+  });
+
+  it('handles self-closing emotion form <emotion type="firm"/>', () => {
+    const out = parseDebaterReply('Body.\n<emotion type="firm"/>');
+    expect(out.emotion).toBe('firm');
+    expect(out.text).toBe('Body.');
+  });
+
+  it('handles informal colon form <emotion: confident>', () => {
+    const out = parseDebaterReply('Body.\n<emotion: confident>');
+    expect(out.emotion).toBe('confident');
+    expect(out.text).toBe('Body.');
+  });
+
+  it('does NOT mistake <mood>thoughtful</mood> for an emotion tag', () => {
+    // "mood" is not in KNOWN_EMOTIONS, and "<mood>" doesn't match
+    // any of our recognised patterns. The stray-tag stripper should still
+    // remove the leftover noise so it doesn't leak into the bubble.
+    const out = parseDebaterReply('Body.\n<mood>thoughtful</mood>');
+    expect(out.emotion).toBeUndefined();
+    expect(out.text).not.toContain('<');
+    expect(out.text).not.toContain('mood');
+  });
+
+  it('strips stray unknown tags from spoken text (no leak)', () => {
+    const out = parseDebaterReply(
+      'Hello world.\n<random_tag>noise</random_tag>'
+    );
+    expect(out.text).not.toContain('<');
+    expect(out.text).not.toContain('random_tag');
+  });
+
+  it('still preserves inline punctuation like "x < y" (no tag match)', () => {
+    const out = parseDebaterReply('We argue x < y in this case.');
+    // "<y" alone isn't a valid tag (no closing >), so stripper leaves it.
+    expect(out.text).toBe('We argue x < y in this case.');
+  });
+
+  it('emotion tag in the middle of text is still extracted', () => {
+    const out = parseDebaterReply(
+      'Firstly, X. <emotion>confident</emotion> Secondly, Y.'
+    );
+    expect(out.emotion).toBe('confident');
+    expect(out.text).toContain('Firstly');
+    expect(out.text).toContain('Secondly');
+    expect(out.text).not.toContain('<');
+  });
 });

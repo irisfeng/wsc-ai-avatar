@@ -45,7 +45,7 @@ export default function DebatePage() {
   const abortRef = useRef<AbortController | null>(null);
 
   const mic = useMic('en-US');
-  const { play } = useAudioMouth();
+  const { play, prime } = useAudioMouth();
 
   // Persist session whenever messages change (debounced via effect).
   useEffect(() => {
@@ -100,6 +100,13 @@ export default function DebatePage() {
   async function send(textToSend: string) {
     const userMsg: ChatMessage = { role: 'user', content: textToSend.trim() };
     if (!userMsg.content) return;
+
+    // E2: warm up AudioContext from within the user-gesture handler so the
+    // mp3 that arrives later (post-LLM-stream) can play without Chrome's
+    // autoplay-policy blocking it. Fire-and-forget; if it fails the worst
+    // case is silent first reply on a fresh page.
+    void prime();
+
     setBusy(true);
     setError('');
     setPoi(undefined);
@@ -168,6 +175,8 @@ export default function DebatePage() {
     if (mic.listening) {
       mic.stop();
     } else {
+      // E2: also warm up audio here so voice-only flow gets sound.
+      void prime();
       mic.start((finalText) => {
         if (finalText) void send(finalText);
       });
