@@ -243,7 +243,16 @@ export default function DebatePage() {
           speaking={busy}
           caption={liveCaption(streaming, messages)}
           className="absolute inset-0"
-          topRightSlot={<AvatarPicker value={avatarId} onChange={setAvatarId} />}
+          topRightSlot={
+            <AvatarPicker
+              value={avatarId}
+              onChange={setAvatarId}
+              // Lock the picker while the AI is generating + speaking —
+              // mid-turn swaps destroy the Pixi WebGL context and kill
+              // the in-flight sentence-level TTS queue.
+              disabled={busy}
+            />
+          }
         >
           <Live2DStage
             // key forces a full unmount+remount when switching models —
