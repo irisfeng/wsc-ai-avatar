@@ -90,6 +90,30 @@ export function Live2DStage({
         if (cancelled || !canvasRef.current) return;
 
         const parentEl = canvasRef.current.parentElement;
+
+        // Wait until the parent actually has non-zero dimensions before
+        // initialising Pixi. With absolute-positioned ancestors the
+        // browser sometimes hands us a freshly-mounted element whose
+        // layout hasn't been computed yet, which makes `parentEl.clientWidth`
+        // read 0. Pixi's WebGL setup then queries the GL context at 0×0
+        // and the shader-pool check explodes with
+        // "Invalid value of `0` passed to checkMaxIfStatementsInShader".
+        await waitForLayout(parentEl);
+        if (cancelled || !canvasRef.current) return;
+
+        // Defensive: clamp to a sane minimum even if measurement still
+        // somehow returns 0 (e.g. display:none ancestor).
+        const initialW = Math.max(
+          parentEl?.clientWidth || 0,
+          window.innerWidth || 0,
+          320
+        );
+        const initialH = Math.max(
+          parentEl?.clientHeight || 0,
+          window.innerHeight || 0,
+          240
+        );
+
         const application = new PIXI.Application({
           view: canvasRef.current,
           autoStart: true,
@@ -97,8 +121,8 @@ export function Live2DStage({
           antialias: true,
           resolution: window.devicePixelRatio || 1,
           autoDensity: true,
-          width: parentEl?.clientWidth ?? window.innerWidth,
-          height: parentEl?.clientHeight ?? window.innerHeight,
+          width: initialW,
+          height: initialH,
           resizeTo: parentEl || undefined
         });
         app = application;
@@ -323,6 +347,37 @@ async function ensureCubismCore(): Promise<void> {
   if (w.Live2DCubismCore) return;
   // Cubism 4 core (closed source binary released by Live2D Inc.)
   await loadScript('/live2d/core/live2dcubismcore.min.js');
+}
+
+/**
+ * Resolves once `el` has a non-zero clientWidth & clientHeight, or after a
+ * short timeout (~ 1 s). Used to dodge a race where Pixi's WebGL setup
+ * queries the canvas before CSS layout finishes, which yields a 0×0 GL
+ * context and trips `checkMaxIfStatementsInShader`.
+ */
+function waitForLayout(el: HTMLElement | null): Promise<void> {
+  return new Promise<void>((resolve) => {
+    if (!el) {
+      resolve();
+      return;
+    }
+    const ready = () => el.clientWidth > 0 && el.clientHeight > 0;
+    if (ready()) {
+      resolve();
+      return;
+    }
+    let frames = 0;
+    const maxFrames = 60; // ~1 s at 60 Hz
+    const tick = () => {
+      frames += 1;
+      if (ready() || frames >= maxFrames) {
+        resolve();
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
 }
 
 function loadScript(src: string): Promise<void> {
