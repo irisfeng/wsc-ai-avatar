@@ -187,9 +187,17 @@ export function Live2DStage({
           /**
            * Use the lipsyncpatch's built-in `speak()` which plays audio AND drives the
            * model's mouth from the same audio analyser — most accurate option.
+           *
+           * IMPORTANT — Chrome AudioContext gotcha:
+           * The library calls `new AudioContext()` for every speak() invocation.
+           * Contexts created far from a user gesture start `suspended`, so the
+           * <audio> element plays (you hear sound) but the analyser feeding
+           * ParamMouthOpenY reads zeros — mouth freezes from sentence 2 onward.
+           * Fix: poll briefly after speak() initialises and force-resume the
+           * fresh context grabbed from motionManager.currentContext.
            */
           speak(audioUrl, opts) {
-            return new Promise((resolve, reject) => {
+            return new Promise<void>((resolve, reject) => {
               try {
                 const speakable = model as unknown as {
                   speak: (
@@ -202,16 +210,39 @@ export function Live2DStage({
                       onFinish?: () => void;
                       onError?: (e: unknown) => void;
                     }
-                  ) => void;
+                  ) => Promise<unknown> | unknown;
                 };
-                speakable.speak(audioUrl, {
+
+                const ret = speakable.speak(audioUrl, {
                   volume: opts?.volume ?? 1,
                   expression: opts?.expression,
                   resetExpression: true,
                   crossOrigin: 'anonymous',
                   onFinish: () => resolve(),
-                  onError: (e) => reject(e instanceof Error ? e : new Error(String(e)))
+                  onError: (e) =>
+                    reject(e instanceof Error ? e : new Error(String(e)))
                 });
+
+                // After speak()'s init resolves, the library has set
+                // internalModel.motionManager.currentContext. Resume it if Chrome
+                // started it suspended.
+                const resumeWhenReady = () => {
+                  const ctx = (model as unknown as {
+                    internalModel?: {
+                      motionManager?: { currentContext?: AudioContext };
+                    };
+                  }).internalModel?.motionManager?.currentContext;
+                  if (ctx && ctx.state === 'suspended') {
+                    ctx.resume().catch(() => undefined);
+                  }
+                };
+                if (ret && typeof (ret as Promise<unknown>).then === 'function') {
+                  (ret as Promise<unknown>).then(resumeWhenReady).catch(() => undefined);
+                } else {
+                  // speak() is sync in some versions — give it a microtask
+                  // to write currentContext, then resume.
+                  Promise.resolve().then(resumeWhenReady);
+                }
               } catch (e) {
                 reject(e instanceof Error ? e : new Error(String(e)));
               }
