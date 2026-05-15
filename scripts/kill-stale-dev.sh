@@ -46,4 +46,18 @@ if [ "$found_any" -eq 1 ]; then
   sleep 1
 fi
 
+# 3. macOS / iCloud Drive sometimes leaves ghost duplicates inside .next/
+#    when the project lives under ~/Documents (iCloud-synced). The ghosts
+#    look like "app 2/", "routes.d 2.ts" etc. (space + "2"). TypeScript
+#    then sees duplicate identifiers and the dev server hangs at "Starting...".
+#    Sweep them on every boot so the user never has to think about it.
+if [ -d "$ROOT/.next" ]; then
+  ghost_count=$(find "$ROOT/.next" -name "* 2" -o -name "* 2.*" 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$ghost_count" -gt 0 ]; then
+    echo "  ↳ sweeping $ghost_count iCloud/Finder ghost duplicates from .next/"
+    # -exec rm is safer than xargs when paths contain spaces
+    find "$ROOT/.next" \( -name "* 2" -o -name "* 2.*" \) -exec rm -rf {} + 2>/dev/null || true
+  fi
+fi
+
 exit 0
