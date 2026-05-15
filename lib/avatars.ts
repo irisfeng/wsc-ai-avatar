@@ -6,12 +6,16 @@
 
 import type { ParsedSpeech } from '@/lib/parseEmotion';
 
+export type AvatarId = 'mao' | 'natori' | 'hiyori';
+
 export interface AvatarConfig {
-  id: 'mao' | 'hiyori';
+  id: AvatarId;
   /** display label */
   label: string;
   /** short hint shown under the camera frame */
   blurb: string;
+  /** single emoji used in the avatar picker chip */
+  emoji: string;
   /** model3.json path served from /public */
   modelUrl: string;
   /** layout anchors inside the Live2D stage (0..1) */
@@ -27,18 +31,15 @@ export interface AvatarConfig {
   expressions: Record<NonNullable<ParsedSpeech['emotion']>, string | null>;
 }
 
-export const AVATARS: Record<AvatarConfig['id'], AvatarConfig> = {
-  // Mao — Live2D Inc. Cubism 5 sample. The character design is a magical-
-  // artist / wizard girl (witch hat, paint-splashed jacket, paintbrush
-  // "staff") — NOT business attire as I initially assumed. The model is
-  // full-body. To make her work for a "video call from a desk" scene we
-  // zoom in hard (scale 1.85) and anchor near the top of the camera frame
-  // so legs are pushed past the bottom and visually replaced by the desk
-  // surface in VideoCallScene. 8 expressions exp_01–exp_08.
+export const AVATARS: Record<AvatarId, AvatarConfig> = {
+  // Mao — magical-artist character (witch hat, paint-splashed jacket).
+  // 8 expressions (exp_01–08). Full-body sample; hard-zoom strategy lets
+  // the desk surface in VideoCallScene replace her lower body.
   mao: {
     id: 'mao',
     label: 'Mao · 创意辩手',
     blurb: 'WSC senior · creative arts track',
+    emoji: '🎨',
     modelUrl: '/live2d/models/Mao/runtime/Mao.model3.json',
     anchorX: 0.5,
     anchorY: 0.02,
@@ -55,12 +56,37 @@ export const AVATARS: Record<AvatarConfig['id'], AvatarConfig> = {
       angry: 'exp_07'
     }
   },
-  // Hiyori — full-body kawaii junior. Same hard-zoom strategy as Mao so
-  // the desk surface in VideoCallScene visually replaces her lower body.
+  // Natori — formal male, glasses, gray hair. 11 expressions, half of them
+  // semantically named (Smile, Surprised, Angry, Sad, Blushing, Normal) —
+  // the strongest fit for a "senior debater" video-call opponent.
+  natori: {
+    id: 'natori',
+    label: 'Natori · 学者派',
+    blurb: 'WSC senior · scholar track',
+    emoji: '🎩',
+    modelUrl: '/live2d/models/Natori/runtime/Natori.model3.json',
+    anchorX: 0.5,
+    anchorY: 0.02,
+    scale: 1.6,
+    expressions: {
+      confident: 'Smile',
+      thoughtful: 'exp_01',
+      surprised: 'Surprised',
+      amused: 'Smile',
+      firm: 'Angry',
+      happy: 'Smile',
+      neutral: 'Normal',
+      sad: 'Sad',
+      angry: 'Angry'
+    }
+  },
+  // Hiyori — full-body kawaii junior. No expressions (sample doesn't ship
+  // any), but lipSync works fine.
   hiyori: {
     id: 'hiyori',
     label: 'Hiyori · 同龄',
     blurb: 'WSC peer debater · junior section',
+    emoji: '🌸',
     modelUrl: '/live2d/models/Hiyori/runtime/Hiyori.model3.json',
     anchorX: 0.5,
     anchorY: 0.04,
@@ -81,7 +107,13 @@ export const AVATARS: Record<AvatarConfig['id'], AvatarConfig> = {
   }
 };
 
-export const DEFAULT_AVATAR_ID: AvatarConfig['id'] = 'mao';
+export const AVATAR_LIST: AvatarConfig[] = [
+  AVATARS.natori,
+  AVATARS.mao,
+  AVATARS.hiyori
+];
+
+export const DEFAULT_AVATAR_ID: AvatarId = 'natori';
 
 /** Translate a LLM-emitted emotion word into the model's expression ID. */
 export function resolveExpression(

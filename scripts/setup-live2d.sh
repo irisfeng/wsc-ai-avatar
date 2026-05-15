@@ -65,6 +65,28 @@ for FN in mtn_01 mtn_02 mtn_03 mtn_04 sample_01 special_01 special_02 special_03
     -o "$MAO_DIR/motions/${FN}.motion3.json"
 done
 
+# ─── Natori (male, formal, 11 expressions — top WSC senior fit) ────
+NATORI_REPO="$SAMPLES_BASE/Natori"
+NATORI_DIR="$MODELS_DIR/Natori/runtime"
+echo "→ Downloading Natori sample model (male, formal — 11 expressions)…"
+mkdir -p "$NATORI_DIR/Natori.2048" "$NATORI_DIR/exp" "$NATORI_DIR/motions"
+for FILE in Natori.model3.json Natori.moc3 Natori.physics3.json \
+            Natori.pose3.json Natori.cdi3.json; do
+  echo "    $FILE"
+  curl -fsSL "$NATORI_REPO/$FILE" -o "$NATORI_DIR/$FILE"
+done
+echo "    Natori.2048/texture_00.png"
+curl -fsSL "$NATORI_REPO/Natori.2048/texture_00.png" -o "$NATORI_DIR/Natori.2048/texture_00.png"
+for FN in Angry Blushing Normal Sad Smile Surprised exp_01 exp_02 exp_03 exp_04 exp_05; do
+  echo "    exp/${FN}.exp3.json"
+  curl -fsSL "$NATORI_REPO/exp/${FN}.exp3.json" -o "$NATORI_DIR/exp/${FN}.exp3.json"
+done
+for I in 00 01 02 03 04 05 06 07; do
+  echo "    motions/mtn_${I}.motion3.json"
+  curl -fsSL "$NATORI_REPO/motions/mtn_${I}.motion3.json" \
+    -o "$NATORI_DIR/motions/mtn_${I}.motion3.json"
+done
+
 echo "✓ Live2D assets installed under $TARGET"
-echo "  Default avatar: Mao (half-body, business attire — debate-trainer fit)"
+echo "  Avatars: Mao (creative) · Natori (formal male) · Hiyori (junior peer)"
 echo "  Replace with your own licensed model for production use."

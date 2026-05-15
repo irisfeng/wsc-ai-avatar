@@ -9,10 +9,16 @@ import type { DebateSide } from '@/lib/prompts';
 import { MOTIONS } from '@/lib/motions';
 import { parseDebaterReply } from '@/lib/parseEmotion';
 import { extractSentences, flushTail } from '@/lib/sentenceQueue';
-import { AVATARS, DEFAULT_AVATAR_ID, resolveExpression } from '@/lib/avatars';
+import {
+  AVATARS,
+  DEFAULT_AVATAR_ID,
+  resolveExpression,
+  type AvatarId
+} from '@/lib/avatars';
 import { useMic } from '@/components/chat/useMic';
 import { streamChat } from '@/components/chat/streamClient';
 import { SentenceTtsQueue } from '@/components/chat/sentenceTtsQueue';
+import { AvatarPicker } from '@/components/chat/AvatarPicker';
 import { VideoCallScene } from '@/components/live2d/VideoCallScene';
 import { useAudioMouth } from '@/components/live2d/useLipSync';
 import { ChatMessages } from '@/components/chat/ChatMessages';
@@ -30,8 +36,28 @@ const Live2DStage = dynamic(
   { ssr: false }
 );
 
+const AVATAR_PREF_KEY = 'wsc.avatar';
+
 export default function DebatePage() {
-  const avatar = AVATARS[DEFAULT_AVATAR_ID];
+  const [avatarId, setAvatarId] = useState<AvatarId>(DEFAULT_AVATAR_ID);
+  const avatar = AVATARS[avatarId];
+  // Restore avatar choice from localStorage on mount; persist on change.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(AVATAR_PREF_KEY);
+      if (saved && saved in AVATARS) setAvatarId(saved as AvatarId);
+    } catch {
+      /* localStorage blocked — ignore */
+    }
+  }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem(AVATAR_PREF_KEY, avatarId);
+    } catch {
+      /* ignore */
+    }
+  }, [avatarId]);
+
   const [motion, setMotion] = useState(MOTIONS[0].text);
   const [userSide, setUserSide] = useState<DebateSide>('proposition');
   const [round, setRound] = useState<'opening' | 'rebuttal' | 'reply'>('opening');
@@ -216,6 +242,7 @@ export default function DebatePage() {
           }
           speaking={busy}
           className="absolute inset-0"
+          topRightSlot={<AvatarPicker value={avatarId} onChange={setAvatarId} />}
         >
           <Live2DStage
             modelUrl={avatar.modelUrl}
