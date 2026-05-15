@@ -83,11 +83,16 @@ export function prepSystemPrompt(): string {
   ].join('\n');
 }
 
-export const SAMPLE_MOTIONS = [
-  'This House Believes That social media has done more harm than good for teenagers.',
-  'This House Would ban single-use plastics in all schools.',
-  'This House Believes That AI tutors should replace human homework helpers.',
-  'This House Would lower the voting age to 16.',
-  'This House Believes That space exploration is a waste of resources while Earth is in crisis.',
-  'This House Would make voting compulsory for citizens over 18.'
-];
+/**
+ * Backward-compatible flat motion list. Prefer importing from `lib/motions.ts`
+ * for new code — it provides subject tags, source year, and helpers.
+ */
+import { MOTION_TEXTS } from '@/lib/motions';
+
+// Keep first N short ones with "This House Believes / Would" prefixes for
+// callers that just need a small dropdown. Tests assert ≥ 6 + format.
+export const SAMPLE_MOTIONS: string[] = MOTION_TEXTS
+  .filter((m) => /^this house (believes that|would)/i.test(m))
+  // Title-case the leading words so existing UI/tests still pass.
+  .map((m) => m.replace(/^this house believes that/i, 'This House Believes That').replace(/^this house would/i, 'This House Would'))
+  .slice(0, 12);

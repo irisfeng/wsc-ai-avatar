@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { ArrowLeft, NotebookPen } from 'lucide-react';
 import { useState } from 'react';
-import { SAMPLE_MOTIONS } from '@/lib/prompts';
+import { MOTIONS } from '@/lib/motions';
+import { MotionPicker } from '@/components/chat/MotionPicker';
 import { streamChat } from '@/components/chat/streamClient';
 
 export default function PrepPage() {
-  const [motion, setMotion] = useState(SAMPLE_MOTIONS[0]);
+  const [motion, setMotion] = useState(MOTIONS[0].text);
   const [custom, setCustom] = useState('');
   const [output, setOutput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -52,21 +53,13 @@ export default function PrepPage() {
 
       <div className="mt-6 grid gap-4">
         <div>
-          <label className="mb-1 block text-xs text-white/50">Sample Motion</label>
-          <select
-            className="input"
+          <MotionPicker
             value={motion}
-            onChange={(e) => {
-              setMotion(e.target.value);
+            onChange={(v) => {
+              setMotion(v);
               setCustom('');
             }}
-          >
-            {SAMPLE_MOTIONS.map((m) => (
-              <option key={m} value={m} className="bg-wsc-ink">
-                {m}
-              </option>
-            ))}
-          </select>
+          />
         </div>
         <div>
           <label className="mb-1 block text-xs text-white/50">Custom Motion (optional)</label>

@@ -2,17 +2,25 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Mic, Send, Square } from 'lucide-react';
 import type { ChatMessage } from '@/lib/llm';
 import type { DebateSide } from '@/lib/prompts';
-import { SAMPLE_MOTIONS } from '@/lib/prompts';
+import { MOTIONS } from '@/lib/motions';
 import { parseDebaterReply } from '@/lib/parseEmotion';
 import { useMic } from '@/components/chat/useMic';
 import { fetchTTS } from '@/components/chat/ttsClient';
 import { streamChat } from '@/components/chat/streamClient';
 import { useAudioMouth } from '@/components/live2d/useLipSync';
 import { ChatMessages } from '@/components/chat/ChatMessages';
+import { MotionPicker } from '@/components/chat/MotionPicker';
+import { HistoryPanel } from '@/components/chat/HistoryPanel';
+import {
+  startDebateSession,
+  updateDebateSession,
+  type DebateSession,
+  type Session
+} from '@/lib/storage';
 
 const Live2DStage = dynamic(
   () => import('@/components/live2d/Live2DStage').then((m) => m.Live2DStage),
@@ -20,7 +28,7 @@ const Live2DStage = dynamic(
 );
 
 export default function DebatePage() {
-  const [motion, setMotion] = useState(SAMPLE_MOTIONS[0]);
+  const [motion, setMotion] = useState(MOTIONS[0].text);
   const [userSide, setUserSide] = useState<DebateSide>('proposition');
   const [round, setRound] = useState<'opening' | 'rebuttal' | 'reply'>('opening');
   const [expression, setExpression] = useState<string | undefined>(undefined);
@@ -31,10 +39,63 @@ export default function DebatePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>('');
   const [provider, setProvider] = useState<string | undefined>();
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyKey, setHistoryKey] = useState(0);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const mic = useMic('en-US');
   const { play } = useAudioMouth();
+
+  // Persist session whenever messages change (debounced via effect).
+  useEffect(() => {
+    if (messages.length === 0) return;
+    (async () => {
+      try {
+        if (!sessionId) {
+          const s = await startDebateSession({
+            motion,
+            userSide,
+            round,
+            messages
+          });
+          setSessionId(s.id);
+        } else {
+          await updateDebateSession(sessionId, {
+            motion,
+            userSide,
+            round,
+            messages
+          });
+        }
+        setHistoryKey((k) => k + 1);
+      } catch {
+        /* storage unavailable — skip */
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
+
+  function restoreSession(s: Session) {
+    if (s.kind !== 'debate') return;
+    const d = s as DebateSession;
+    setMotion(d.motion);
+    setUserSide(d.userSide);
+    setRound(d.round);
+    setMessages(d.messages);
+    setSessionId(d.id);
+    setShowHistory(false);
+    setPoi(undefined);
+    setStreaming('');
+  }
+
+  function newSession() {
+    setSessionId(null);
+    setMessages([]);
+    setPoi(undefined);
+    setStreaming('');
+    setExpression(undefined);
+  }
 
   async function send(textToSend: string) {
     const userMsg: ChatMessage = { role: 'user', content: textToSend.trim() };
@@ -132,19 +193,8 @@ export default function DebatePage() {
 
       <aside className="flex h-[60vh] flex-col border-l border-white/10 bg-wsc-ink/95 md:h-screen">
         <header className="space-y-3 border-b border-white/10 p-4">
-          <label className="block text-xs text-white/50">Motion</label>
-          <select
-            className="input"
-            value={motion}
-            onChange={(e) => setMotion(e.target.value)}
-          >
-            {SAMPLE_MOTIONS.map((m) => (
-              <option key={m} value={m} className="bg-wsc-ink">
-                {m}
-              </option>
-            ))}
-          </select>
-          <div className="flex flex-wrap gap-2 text-xs">
+          <MotionPicker value={motion} onChange={setMotion} />
+          <div className="flex flex-wrap items-center gap-2 text-xs">
             <Toggle
               active={userSide === 'proposition'}
               onClick={() => setUserSide('proposition')}
@@ -164,8 +214,39 @@ export default function DebatePage() {
                 label={r}
               />
             ))}
+            <span className="ml-auto flex items-center gap-1">
+              <button
+                type="button"
+                className="rounded-full bg-white/5 px-2 py-0.5 text-[11px] text-white/60 hover:bg-white/10"
+                onClick={newSession}
+                title="新建一轮"
+              >
+                + 新建
+              </button>
+              <button
+                type="button"
+                className={
+                  showHistory
+                    ? 'rounded-full bg-wsc-calm px-2 py-0.5 text-[11px] text-wsc-ink'
+                    : 'rounded-full bg-white/5 px-2 py-0.5 text-[11px] text-white/60 hover:bg-white/10'
+                }
+                onClick={() => setShowHistory((v) => !v)}
+              >
+                历史
+              </button>
+            </span>
           </div>
         </header>
+
+        {showHistory && (
+          <div className="border-b border-white/10 bg-white/[0.02] py-2">
+            <HistoryPanel
+              kind="debate"
+              refreshKey={historyKey}
+              onRestore={restoreSession}
+            />
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto p-4">
           {messages.length === 0 && !streaming ? (
