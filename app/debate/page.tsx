@@ -246,6 +246,15 @@ export default function DebatePage() {
           topRightSlot={<AvatarPicker value={avatarId} onChange={setAvatarId} />}
         >
           <Live2DStage
+            // key forces a full unmount+remount when switching models —
+            // PixiJS calls destroy(true, ...) which removes the <canvas>
+            // from the DOM and tears down its WebGL context. Reusing the
+            // same React canvas slot afterwards hands the new
+            // PIXI.Application a detached canvas whose GL caps query
+            // returns 0, tripping `checkMaxIfStatementsInShader`.
+            // Keying by modelUrl gives every model a fresh canvas DOM
+            // node and a fresh GL context.
+            key={avatar.modelUrl}
             modelUrl={avatar.modelUrl}
             expression={resolveExpression(avatar, emotionWord)}
             className="absolute inset-0"
