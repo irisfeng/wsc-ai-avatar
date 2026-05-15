@@ -6,7 +6,7 @@
 
 import type { ParsedSpeech } from '@/lib/parseEmotion';
 
-export type AvatarId = 'ren' | 'mao' | 'natori' | 'hiyori';
+export type AvatarId = 'mao' | 'natori' | 'haru' | 'hiyori';
 
 export interface AvatarConfig {
   id: AvatarId;
@@ -37,31 +37,6 @@ export interface AvatarConfig {
 }
 
 export const AVATARS: Record<AvatarId, AvatarConfig> = {
-  // Ren — male, slim modern design, 5 expressions. The new default male
-  // since Natori's look proved divisive.
-  ren: {
-    id: 'ren',
-    label: 'Ren · 学者派',
-    blurb: 'WSC senior · scholar track',
-    emoji: '🎓',
-    modelUrl: '/live2d/models/Ren/runtime/Ren.model3.json',
-    anchorX: 0.5,
-    anchorY: -0.05,
-    scale: 2.0,
-    // Andrew is younger, warmer male voice — matches the modern look.
-    voice: 'en-US-AndrewNeural',
-    expressions: {
-      confident: 'exp_01',
-      thoughtful: 'exp_02',
-      surprised: 'exp_03',
-      amused: 'exp_01',
-      firm: 'exp_04',
-      happy: 'exp_01',
-      neutral: 'exp_01',
-      sad: 'exp_05',
-      angry: 'exp_04'
-    }
-  },
   // Mao — magical-artist character (witch hat, paint-splashed jacket).
   // 8 expressions (exp_01–08). Full-body sample; hard-zoom strategy lets
   // the desk surface in VideoCallScene replace her lower body.
@@ -92,15 +67,15 @@ export const AVATARS: Record<AvatarId, AvatarConfig> = {
   // the strongest fit for a "senior debater" video-call opponent.
   natori: {
     id: 'natori',
-    label: 'Natori · 资深辩手',
-    blurb: 'WSC senior · veteran',
+    label: 'Natori · 学者派',
+    blurb: 'WSC senior · scholar track',
     emoji: '🎩',
     modelUrl: '/live2d/models/Natori/runtime/Natori.model3.json',
-    // Crop tighter — call tile shows shoulders & head only (Pika-style).
     anchorX: 0.5,
     anchorY: -0.05,
     scale: 2.1,
-    voice: 'en-US-GuyNeural', // adult male, professional
+    // Andrew is the younger, warmer male voice — softer than Guy.
+    voice: 'en-US-AndrewNeural',
     expressions: {
       confident: 'Smile',
       thoughtful: 'exp_01',
@@ -138,17 +113,41 @@ export const AVATARS: Record<AvatarId, AvatarConfig> = {
       sad: null,
       angry: null
     }
+  },
+  // Haru — mature female schoolgirl, 8 expressions (F01–F08), 26 motions.
+  // Provides a more grown-up female option alongside the junior Hiyori.
+  haru: {
+    id: 'haru',
+    label: 'Haru · 高年级',
+    blurb: 'WSC senior · varsity debater',
+    emoji: '🌷',
+    modelUrl: '/live2d/models/Haru/runtime/Haru.model3.json',
+    anchorX: 0.5,
+    anchorY: -0.05,
+    scale: 1.7,
+    voice: 'en-US-EmmaNeural', // composed female, slightly mature
+    expressions: {
+      confident: 'F01',
+      thoughtful: 'F03',
+      surprised: 'F05',
+      amused: 'F02',
+      firm: 'F07',
+      happy: 'F02',
+      neutral: 'F01',
+      sad: 'F08',
+      angry: 'F07'
+    }
   }
 };
 
 export const AVATAR_LIST: AvatarConfig[] = [
-  AVATARS.ren,
   AVATARS.mao,
-  AVATARS.hiyori,
-  AVATARS.natori
+  AVATARS.natori,
+  AVATARS.haru,
+  AVATARS.hiyori
 ];
 
-export const DEFAULT_AVATAR_ID: AvatarId = 'ren';
+export const DEFAULT_AVATAR_ID: AvatarId = 'mao';
 
 /** Translate a LLM-emitted emotion word into the model's expression ID. */
 export function resolveExpression(

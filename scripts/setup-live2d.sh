@@ -87,26 +87,32 @@ for I in 00 01 02 03 04 05 06 07; do
     -o "$NATORI_DIR/motions/mtn_${I}.motion3.json"
 done
 
-# ─── Ren (male, slim/cool design, 5 expressions — new default male) ──
-REN_REPO="$SAMPLES_BASE/Ren"
-REN_DIR="$MODELS_DIR/Ren/runtime"
-echo "→ Downloading Ren sample model (male, modern look)…"
-mkdir -p "$REN_DIR/Ren.2048" "$REN_DIR/expressions" "$REN_DIR/motions"
-for FILE in Ren.model3.json Ren.moc3 Ren.physics3.json Ren.cdi3.json; do
+# ─── Haru (mature female schoolgirl, 8 expressions, 26 motions) ──────
+# moc3 v1 — broad SDK compatibility. NOT Ren — Ren's moc3 is v6 which
+# requires Cubism 5 SDK R5 (not yet on the public CDN).
+HARU_REPO="$SAMPLES_BASE/Haru"
+HARU_DIR="$MODELS_DIR/Haru/runtime"
+echo "→ Downloading Haru sample model (mature female, 8 expressions)…"
+mkdir -p "$HARU_DIR/Haru.2048" "$HARU_DIR/expressions" "$HARU_DIR/motions"
+for FILE in Haru.model3.json Haru.moc3 Haru.physics3.json \
+            Haru.pose3.json Haru.cdi3.json Haru.userdata3.json; do
   echo "    $FILE"
-  curl -fsSL "$REN_REPO/$FILE" -o "$REN_DIR/$FILE"
+  curl -fsSL "$HARU_REPO/$FILE" -o "$HARU_DIR/$FILE"
 done
-echo "    Ren.2048/texture_00.png"
-curl -fsSL "$REN_REPO/Ren.2048/texture_00.png" -o "$REN_DIR/Ren.2048/texture_00.png"
-for I in 01 02 03 04 05; do
-  echo "    expressions/exp_${I}.exp3.json"
-  curl -fsSL "$REN_REPO/expressions/exp_${I}.exp3.json" \
-    -o "$REN_DIR/expressions/exp_${I}.exp3.json"
+for TEX in texture_00.png texture_01.png; do
+  echo "    Haru.2048/$TEX"
+  curl -fsSL "$HARU_REPO/Haru.2048/$TEX" -o "$HARU_DIR/Haru.2048/$TEX"
 done
-for I in 01 02 03; do
-  echo "    motions/mtn_${I}.motion3.json"
-  curl -fsSL "$REN_REPO/motions/mtn_${I}.motion3.json" \
-    -o "$REN_DIR/motions/mtn_${I}.motion3.json"
+for I in 01 02 03 04 05 06 07 08; do
+  echo "    expressions/F${I}.exp3.json"
+  curl -fsSL "$HARU_REPO/expressions/F${I}.exp3.json" \
+    -o "$HARU_DIR/expressions/F${I}.exp3.json"
+done
+# Idle + 4 representative motions (1, 4, 10, 16) — fewer files, still varied
+for MN in haru_g_idle haru_g_m01 haru_g_m04 haru_g_m10 haru_g_m16; do
+  echo "    motions/${MN}.motion3.json"
+  curl -fsSL "$HARU_REPO/motions/${MN}.motion3.json" \
+    -o "$HARU_DIR/motions/${MN}.motion3.json"
 done
 
 echo "✓ Live2D assets installed under $TARGET"
