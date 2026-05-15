@@ -8,9 +8,10 @@ import type { ChatMessage } from '@/lib/llm';
 import type { DebateSide } from '@/lib/prompts';
 import { MOTIONS } from '@/lib/motions';
 import { parseDebaterReply } from '@/lib/parseEmotion';
+import { extractSentences, flushTail } from '@/lib/sentenceQueue';
 import { useMic } from '@/components/chat/useMic';
-import { fetchTTS } from '@/components/chat/ttsClient';
 import { streamChat } from '@/components/chat/streamClient';
+import { SentenceTtsQueue } from '@/components/chat/sentenceTtsQueue';
 import { useAudioMouth } from '@/components/live2d/useLipSync';
 import { ChatMessages } from '@/components/chat/ChatMessages';
 import { MotionPicker } from '@/components/chat/MotionPicker';
@@ -43,6 +44,8 @@ export default function DebatePage() {
   const [historyKey, setHistoryKey] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const ttsQueueRef = useRef<SentenceTtsQueue | null>(null);
+  const sentenceCursorRef = useRef(0);
 
   const mic = useMic('en-US');
   const { play, prime } = useAudioMouth();
@@ -101,10 +104,7 @@ export default function DebatePage() {
     const userMsg: ChatMessage = { role: 'user', content: textToSend.trim() };
     if (!userMsg.content) return;
 
-    // E2: warm up AudioContext from within the user-gesture handler so the
-    // mp3 that arrives later (post-LLM-stream) can play without Chrome's
-    // autoplay-policy blocking it. Fire-and-forget; if it fails the worst
-    // case is silent first reply on a fresh page.
+    // E2: warm up AudioContext inside the user-gesture handler.
     void prime();
 
     setBusy(true);
@@ -115,9 +115,14 @@ export default function DebatePage() {
     setMessages(nextHistory);
     setInput('');
 
+    // Abort any in-flight stream / TTS from a previous turn.
     abortRef.current?.abort();
+    ttsQueueRef.current?.abort();
     const ctl = new AbortController();
     abortRef.current = ctl;
+    const ttsQueue = new SentenceTtsQueue();
+    ttsQueueRef.current = ttsQueue;
+    sentenceCursorRef.current = 0;
 
     let raw = '';
     try {
@@ -133,6 +138,15 @@ export default function DebatePage() {
           onDelta: (delta) => {
             raw += delta;
             setStreaming(raw);
+            // F1: incrementally extract complete sentences and pipeline TTS.
+            const { sentences, newCursor } = extractSentences(
+              raw,
+              sentenceCursorRef.current
+            );
+            sentenceCursorRef.current = newCursor;
+            for (const s of sentences) {
+              ttsQueue.enqueue(s, (blob) => play(blob));
+            }
           },
           onError: (err) => setError(err.message)
         }
@@ -141,7 +155,7 @@ export default function DebatePage() {
       setError(err instanceof Error ? err.message : 'stream failed');
     }
 
-    // Stream finished — parse and finalise.
+    // Stream finished — parse final + finalise UI immediately.
     const parsed = parseDebaterReply(raw);
     if (parsed.text) {
       setMessages([...nextHistory, { role: 'assistant', content: parsed.text }]);
@@ -149,26 +163,29 @@ export default function DebatePage() {
     setPoi(parsed.poi);
     if (parsed.emotion) setExpression(parsed.emotion);
     setStreaming('');
-    setBusy(false);
 
-    // TTS speaks the full text after streaming completes (Edge-TTS needs full
-    // sentence for prosody). Best-effort: failure does not break the turn.
-    if (parsed.text) {
-      try {
-        const speakText = parsed.poi
-          ? `${parsed.text}\nPoint of Information: ${parsed.poi}`
-          : parsed.text;
-        const blob = await fetchTTS(speakText);
-        await play(blob, { expression: parsed.emotion });
-      } catch (ttsErr) {
-        // eslint-disable-next-line no-console
-        console.warn('TTS skipped:', ttsErr);
-      }
+    // F1: speak any leftover body (sentence without terminator at end).
+    const tail = flushTail(raw, sentenceCursorRef.current);
+    if (tail) {
+      ttsQueue.enqueue(tail, (blob) =>
+        play(blob, { expression: parsed.emotion })
+      );
     }
+    // POI is spoken as its own unit, with a verbal prefix.
+    if (parsed.poi) {
+      ttsQueue.enqueue(`Point of Information. ${parsed.poi}`, (blob) =>
+        play(blob)
+      );
+    }
+
+    // Keep input disabled until she finishes speaking the whole turn.
+    await ttsQueue.drain();
+    setBusy(false);
   }
 
   function stopStreaming() {
     abortRef.current?.abort();
+    ttsQueueRef.current?.abort();
   }
 
   function toggleMic() {
