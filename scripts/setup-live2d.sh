@@ -20,35 +20,51 @@ curl -fsSL \
   "https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js" \
   -o "$CORE_DIR/live2dcubismcore.min.js"
 
-REPO="https://raw.githubusercontent.com/Live2D/CubismWebSamples/develop/Samples/Resources/Hiyori"
+SAMPLES_BASE="https://raw.githubusercontent.com/Live2D/CubismWebSamples/develop/Samples/Resources"
+
+# ─── Hiyori (kawaii junior, full-body — kept as alt avatar) ────────
+HIYORI_REPO="$SAMPLES_BASE/Hiyori"
 HIYORI_DIR="$MODELS_DIR/Hiyori/runtime"
-
-echo "→ Downloading Hiyori sample model from Live2D SDK samples repo…"
-mkdir -p "$HIYORI_DIR" "$HIYORI_DIR/Hiyori.2048" "$HIYORI_DIR/motions"
-
-ROOT_FILES=(
-  "Hiyori.model3.json"
-  "Hiyori.moc3"
-  "Hiyori.physics3.json"
-  "Hiyori.pose3.json"
-  "Hiyori.cdi3.json"
-  "Hiyori.userdata3.json"
-)
-for FILE in "${ROOT_FILES[@]}"; do
+echo "→ Downloading Hiyori sample model…"
+mkdir -p "$HIYORI_DIR/Hiyori.2048" "$HIYORI_DIR/motions"
+for FILE in Hiyori.model3.json Hiyori.moc3 Hiyori.physics3.json \
+            Hiyori.pose3.json Hiyori.cdi3.json Hiyori.userdata3.json; do
   echo "    $FILE"
-  curl -fsSL "$REPO/$FILE" -o "$HIYORI_DIR/$FILE"
+  curl -fsSL "$HIYORI_REPO/$FILE" -o "$HIYORI_DIR/$FILE"
 done
-
 for TEX in texture_00.png texture_01.png; do
   echo "    Hiyori.2048/$TEX"
-  curl -fsSL "$REPO/Hiyori.2048/$TEX" -o "$HIYORI_DIR/Hiyori.2048/$TEX"
+  curl -fsSL "$HIYORI_REPO/Hiyori.2048/$TEX" -o "$HIYORI_DIR/Hiyori.2048/$TEX"
 done
-
 for I in 01 02 03 04 05 06 07 08 09 10; do
   echo "    motions/Hiyori_m${I}.motion3.json"
-  curl -fsSL "$REPO/motions/Hiyori_m${I}.motion3.json" \
+  curl -fsSL "$HIYORI_REPO/motions/Hiyori_m${I}.motion3.json" \
     -o "$HIYORI_DIR/motions/Hiyori_m${I}.motion3.json"
 done
 
+# ─── Mao (business half-body, 8 expressions — debate default) ──────
+MAO_REPO="$SAMPLES_BASE/Mao"
+MAO_DIR="$MODELS_DIR/Mao/runtime"
+echo "→ Downloading Mao sample model (debate default — half-body, business attire)…"
+mkdir -p "$MAO_DIR/Mao.2048" "$MAO_DIR/expressions" "$MAO_DIR/motions"
+for FILE in Mao.model3.json Mao.moc3 Mao.physics3.json \
+            Mao.pose3.json Mao.cdi3.json; do
+  echo "    $FILE"
+  curl -fsSL "$MAO_REPO/$FILE" -o "$MAO_DIR/$FILE"
+done
+echo "    Mao.2048/texture_00.png"
+curl -fsSL "$MAO_REPO/Mao.2048/texture_00.png" -o "$MAO_DIR/Mao.2048/texture_00.png"
+for I in 01 02 03 04 05 06 07 08; do
+  echo "    expressions/exp_${I}.exp3.json"
+  curl -fsSL "$MAO_REPO/expressions/exp_${I}.exp3.json" \
+    -o "$MAO_DIR/expressions/exp_${I}.exp3.json"
+done
+for FN in mtn_01 mtn_02 mtn_03 mtn_04 sample_01 special_01 special_02 special_03; do
+  echo "    motions/${FN}.motion3.json"
+  curl -fsSL "$MAO_REPO/motions/${FN}.motion3.json" \
+    -o "$MAO_DIR/motions/${FN}.motion3.json"
+done
+
 echo "✓ Live2D assets installed under $TARGET"
-echo "  Replace Hiyori with your own licensed model for production use."
+echo "  Default avatar: Mao (half-body, business attire — debate-trainer fit)"
+echo "  Replace with your own licensed model for production use."

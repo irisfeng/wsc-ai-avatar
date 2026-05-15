@@ -9,9 +9,11 @@ import type { DebateSide } from '@/lib/prompts';
 import { MOTIONS } from '@/lib/motions';
 import { parseDebaterReply } from '@/lib/parseEmotion';
 import { extractSentences, flushTail } from '@/lib/sentenceQueue';
+import { AVATARS, DEFAULT_AVATAR_ID, resolveExpression } from '@/lib/avatars';
 import { useMic } from '@/components/chat/useMic';
 import { streamChat } from '@/components/chat/streamClient';
 import { SentenceTtsQueue } from '@/components/chat/sentenceTtsQueue';
+import { VideoCallScene } from '@/components/live2d/VideoCallScene';
 import { useAudioMouth } from '@/components/live2d/useLipSync';
 import { ChatMessages } from '@/components/chat/ChatMessages';
 import { MotionPicker } from '@/components/chat/MotionPicker';
@@ -29,10 +31,11 @@ const Live2DStage = dynamic(
 );
 
 export default function DebatePage() {
+  const avatar = AVATARS[DEFAULT_AVATAR_ID];
   const [motion, setMotion] = useState(MOTIONS[0].text);
   const [userSide, setUserSide] = useState<DebateSide>('proposition');
   const [round, setRound] = useState<'opening' | 'rebuttal' | 'reply'>('opening');
-  const [expression, setExpression] = useState<string | undefined>(undefined);
+  const [emotionWord, setEmotionWord] = useState<string | undefined>(undefined);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [streaming, setStreaming] = useState(''); // partial AI reply (raw, pre-parse)
@@ -97,7 +100,7 @@ export default function DebatePage() {
     setMessages([]);
     setPoi(undefined);
     setStreaming('');
-    setExpression(undefined);
+    setEmotionWord(undefined);
   }
 
   async function send(textToSend: string) {
@@ -161,14 +164,17 @@ export default function DebatePage() {
       setMessages([...nextHistory, { role: 'assistant', content: parsed.text }]);
     }
     setPoi(parsed.poi);
-    if (parsed.emotion) setExpression(parsed.emotion);
+    if (parsed.emotion) setEmotionWord(parsed.emotion);
     setStreaming('');
+
+    // Resolve LLM emotion word to this avatar's expression ID (e.g. exp_05 for Mao).
+    const resolvedExpression = resolveExpression(avatar, parsed.emotion);
 
     // F1: speak any leftover body (sentence without terminator at end).
     const tail = flushTail(raw, sentenceCursorRef.current);
     if (tail) {
       ttsQueue.enqueue(tail, (blob) =>
-        play(blob, { expression: parsed.emotion })
+        play(blob, { expression: resolvedExpression })
       );
     }
     // POI is spoken as its own unit, with a verbal prefix.
@@ -202,27 +208,30 @@ export default function DebatePage() {
 
   return (
     <main className="grid h-screen grid-cols-1 md:grid-cols-[1fr_minmax(420px,_36rem)]">
-      <section className="relative h-[40vh] bg-gradient-to-b from-sky-950/60 to-wsc-ink md:h-screen">
-        {/* soft glow behind the avatar — rendered first so it sits underneath */}
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_38%_55%,rgba(76,201,240,0.12),transparent_55%)]" />
-        <Live2DStage
-          expression={expression}
+      <section className="relative h-[40vh] md:h-screen">
+        <VideoCallScene
+          speakerName={`${avatar.label}`}
+          speakerHint={
+            emotionWord ? `${avatar.blurb} · feeling ${emotionWord}` : avatar.blurb
+          }
+          speaking={busy}
           className="absolute inset-0"
-          anchorX={0.42}
-          anchorY={0.6}
-          scale={0.82}
-        />
+        >
+          <Live2DStage
+            modelUrl={avatar.modelUrl}
+            expression={resolveExpression(avatar, emotionWord)}
+            className="absolute inset-0"
+            anchorX={avatar.anchorX}
+            anchorY={avatar.anchorY}
+            scale={avatar.scale}
+          />
+        </VideoCallScene>
         <Link
           href="/"
-          className="absolute left-4 top-4 inline-flex items-center gap-1 rounded-full bg-black/40 px-3 py-1.5 text-xs text-white/80 backdrop-blur hover:bg-black/60"
+          className="absolute left-6 top-6 z-30 inline-flex items-center gap-1 rounded-full bg-black/50 px-3 py-1.5 text-xs text-white/80 backdrop-blur hover:bg-black/70"
         >
           <ArrowLeft className="h-3.5 w-3.5" /> 返回
         </Link>
-        {expression && (
-          <span className="chip absolute right-4 top-4 bg-black/40 backdrop-blur">
-            mood: {expression}
-          </span>
-        )}
       </section>
 
       <aside className="flex h-[60vh] flex-col border-l border-white/10 bg-wsc-ink/95 md:h-screen">
