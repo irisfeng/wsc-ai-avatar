@@ -241,6 +241,7 @@ export default function DebatePage() {
             emotionWord ? `${avatar.blurb} · feeling ${emotionWord}` : avatar.blurb
           }
           speaking={busy}
+          caption={liveCaption(streaming, messages)}
           className="absolute inset-0"
           topRightSlot={<AvatarPicker value={avatarId} onChange={setAvatarId} />}
         >
@@ -407,4 +408,33 @@ function Toggle({
       {label}
     </button>
   );
+}
+
+/**
+ * Resolve what to show in the call-tile live caption strip.
+ *  - While streaming: surface the latest in-progress sentence (skip
+ *    stop markers; strip leftover tag noise).
+ *  - Right after stream ends: surface the AI's last fully-rendered
+ *    message for a couple beats so the user can still see what was said.
+ *  - Otherwise: undefined (caption strip hides).
+ */
+function liveCaption(streaming: string, messages: ChatMessage[]): string | undefined {
+  if (streaming) {
+    // Trim any tag/POI tail and return the last partial sentence.
+    const cut = streaming.split(/<|POI[:：]/, 1)[0].trim();
+    if (!cut) return undefined;
+    // Find the last sentence terminator; show only the most recent clause
+    const re = /[.!?]\s+/g;
+    let lastEnd = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(cut))) lastEnd = m.index + m[0].length;
+    const tail = cut.slice(lastEnd).trim();
+    return tail || cut.slice(-160);
+  }
+  // No live stream — show the last assistant turn if recent
+  const last = [...messages].reverse().find((m) => m.role === 'assistant');
+  if (!last) return undefined;
+  // For a finished turn, show the LAST sentence of the reply
+  const sentences = last.content.split(/(?<=[.!?])\s+/);
+  return sentences[sentences.length - 1]?.trim() || undefined;
 }

@@ -1,28 +1,30 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Signal, Mic2, Wifi } from 'lucide-react';
+import { Mic, MicOff, PhoneOff, Captions, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
- * Video-call scene wrapper — Pika-inspired aesthetic.
+ * Video-call scene — Pika-style.
  *
- * Design rules (one liners):
- *  - **Deep charcoal** background, never warm tones.
- *  - **Single accent**: violet/indigo. No second palette.
- *  - **Glass morphism** on every floating UI chip (backdrop blur + 6%
- *    white fill + 1px white-12% border).
- *  - **One key light** — cool radial from upper-left; subtle warm fill
- *    from upper-right at <20% alpha so the avatar's skin still reads.
- *  - **No decoration that competes with the avatar.** No bookshelves,
- *    no plants, no picture frames — just a desk, a laptop, a mug.
- *  - Borders/radii are consistent: 16px outer frame, 12px chips, 8px desk
- *    objects.
+ * Hard rules learned from observation:
+ *  1. NO desk / laptop / mug / room props. They make the avatar look
+ *     like a photo on a wall instead of a live call participant.
+ *  2. The chrome IS the video-call app — circular control buttons at
+ *     bottom, live caption strip, "you" thumbnail in the corner.
+ *  3. The avatar fills the tile. Heads-and-shoulders crop. Negative
+ *     space pushed to the edges where the chrome lives.
+ *  4. Speaking indicator = big audio waveform overlay, not buried in
+ *     a tiny laptop screen.
+ *  5. One accent colour (violet/indigo) for everything that's "live".
  */
 interface Props {
   speakerName: string;
   speakerHint?: string;
   speaking?: boolean;
+  /** latest sentence the AI just said — shown as a live caption */
+  caption?: string;
+  /** avatar picker / mode chips, anchored top-right */
   topRightSlot?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
@@ -32,260 +34,260 @@ export function VideoCallScene({
   speakerName,
   speakerHint,
   speaking = false,
+  caption,
   topRightSlot,
   children,
   className
 }: Props) {
   const clock = useClock();
+  const callDuration = useCallDuration();
+
   return (
     <div
       className={cn('relative h-full w-full overflow-hidden', className)}
-      style={{ background: '#08060f' }}
+      style={{ background: '#070611' }}
     >
-      {/* === Backdrop: deep charcoal with violet radial glow ============
-          Two radial gradients establish depth without illustration —
-          one violet pulse from upper-left as the key light, one cool
-          indigo wash on the far right for ambient fill. */}
+      {/* === Ambient backdrop — a single violet bloom that follows
+              wherever the head-shoulders crop centres the avatar ====== */}
       <div
         aria-hidden
         className="absolute inset-0"
         style={{
           background: [
-            'radial-gradient(80% 70% at 18% 18%, rgba(124, 58, 237, 0.32), transparent 55%)',
-            'radial-gradient(70% 80% at 92% 38%, rgba(99, 102, 241, 0.18), transparent 60%)',
-            'radial-gradient(120% 80% at 50% 110%, rgba(0,0,0,0.6), transparent 60%)',
-            'linear-gradient(180deg, #0d0a1a 0%, #08060f 100%)'
+            'radial-gradient(72% 60% at 50% 40%, rgba(124, 58, 237, 0.32), transparent 65%)',
+            'radial-gradient(50% 70% at 8% 80%, rgba(56, 189, 248, 0.10), transparent 60%)',
+            'radial-gradient(120% 90% at 50% 110%, rgba(0,0,0,0.65), transparent 50%)',
+            'linear-gradient(180deg, #0b0918 0%, #060410 100%)'
           ].join(',')
         }}
       />
 
-      {/* === Subtle film grain (low-frequency dots, near-monochrome) ====
-          Two faint white pin-pricks instead of the previous 5 coloured
-          bokeh dots — depth cue without colour noise. */}
+      {/* === Live2D canvas takes the full stage so the avatar can fill ==
+              the frame end-to-end. Chrome sits ON TOP. */}
+      <div className="absolute inset-0 z-10">{children}</div>
+
+      {/* === Vignette to focus attention on the head/shoulders area === */}
       <div
         aria-hidden
-        className="absolute inset-0 opacity-25"
+        className="pointer-events-none absolute inset-0 z-20"
         style={{
-          background: [
-            'radial-gradient(circle at 70% 22%, rgba(255,255,255,0.20) 0, transparent 0.25%)',
-            'radial-gradient(circle at 30% 70%, rgba(255,255,255,0.15) 0, transparent 0.22%)'
-          ].join(',')
+          background:
+            'radial-gradient(120% 80% at 50% 35%, transparent 38%, rgba(0,0,0,0.45) 80%, rgba(0,0,0,0.75) 100%)'
         }}
       />
 
-      {/* === Camera frame ================================================
-          Glass-morphism border. Pulses violet on speaking. */}
-      <div className="absolute inset-4 md:inset-8">
+      {/* === TOP CHROME ============================================== */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex items-start justify-between gap-3 p-4">
+        {/* Call meta — left */}
+        <div className="pointer-events-auto flex flex-col gap-2">
+          <GlassPill>
+            <span
+              className={cn(
+                'inline-flex h-1.5 w-1.5 rounded-full',
+                speaking ? 'animate-pulse bg-violet-400' : 'bg-rose-500'
+              )}
+            />
+            <span
+              className={cn(
+                'font-semibold tracking-wide',
+                speaking && 'text-violet-200'
+              )}
+            >
+              LIVE
+            </span>
+            <span className="mx-1 h-3 w-px bg-white/15" />
+            <span className="font-mono tabular-nums text-white/70">
+              {callDuration}
+            </span>
+          </GlassPill>
+          <GlassPill subtle>
+            <span className="text-white/60">WSC Debate Call</span>
+            <span className="mx-1 h-3 w-px bg-white/10" />
+            <span className="text-white/40 tabular-nums">{clock}</span>
+          </GlassPill>
+        </div>
+
+        {/* Avatar picker / mode chips — right */}
+        <div className="pointer-events-auto flex flex-col items-end gap-2">
+          {topRightSlot}
+        </div>
+      </div>
+
+      {/* === SPEAKING WAVEFORM (centre-bottom, above caption) ==========
+              Big, prominent, Pika-style 24-bar live audio bar. */}
+      {speaking && (
         <div
-          className={cn(
-            'relative h-full w-full overflow-hidden rounded-2xl border backdrop-blur-[2px] transition-shadow duration-500',
-            speaking
-              ? 'border-violet-400/45 shadow-[0_0_42px_-4px_rgba(139,92,246,0.55),0_8px_36px_rgba(0,0,0,0.55)]'
-              : 'border-white/[0.09] shadow-[0_8px_42px_rgba(0,0,0,0.55)]'
-          )}
-          style={{
-            background:
-              'linear-gradient(135deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0.005) 100%)'
-          }}
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-[58%] z-30 flex h-12 -translate-x-1/2 items-center gap-[3px]"
         >
-          {/* === Status bar (top) ===
-              Three glass pills: LIVE+clock, avatar picker slot, signal */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between px-4 py-3">
-            <GlassPill>
-              <span className="flex items-center gap-1.5">
-                <span
-                  className={cn(
-                    'inline-block h-1.5 w-1.5 rounded-full',
-                    speaking
-                      ? 'animate-pulse bg-violet-400'
-                      : 'bg-rose-500'
-                  )}
-                />
-                <span
-                  className={cn(
-                    'font-medium tracking-wide',
-                    speaking && 'text-violet-200'
-                  )}
-                >
-                  LIVE
-                </span>
-              </span>
-              <span className="mx-2 h-3 w-px bg-white/15" />
-              <span className="font-mono tabular-nums text-white/70">
-                {clock}
-              </span>
-            </GlassPill>
-            <div className="flex items-center gap-2">
-              {topRightSlot}
-              <GlassPill>
-                <Wifi className="h-3 w-3 text-white/70" />
-                <Signal className="h-3 w-3 text-white/70" />
-                <Mic2
-                  className={cn(
-                    'h-3 w-3',
-                    speaking ? 'text-violet-300' : 'text-white/70'
-                  )}
-                />
-              </GlassPill>
-            </div>
-          </div>
-
-          {/* === Live2D canvas === */}
-          <div className="absolute inset-0 z-10">{children}</div>
-
-          {/* === Vignette to push the avatar centre forward === */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 z-10"
-            style={{
-              background:
-                'radial-gradient(140% 100% at 50% 40%, transparent 50%, rgba(0,0,0,0.45) 100%)'
-            }}
-          />
-
-          {/* === DESK ====================================================
-              Single tilted plane, dark walnut tone, perfectly minimal.
-              The desk's top edge is a thin violet-tinted highlight that
-              echoes the key light. */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-[44%]">
-            {/* horizon highlight (violet-tinted) */}
-            <div
-              className="absolute inset-x-0 top-0 h-px"
+          {Array.from({ length: 24 }).map((_, i) => (
+            <span
+              key={i}
+              className="w-[3px] rounded-full bg-violet-400/85"
               style={{
-                background:
-                  'linear-gradient(to right, transparent, rgba(167, 139, 250, 0.45) 25%, rgba(167, 139, 250, 0.45) 75%, transparent)',
-                boxShadow: '0 1px 14px rgba(167, 139, 250, 0.18)'
+                height: `${randomBarHeight(i)}%`,
+                animation: `wsc-bar 0.${800 + (i % 5) * 80}s ease-in-out infinite`,
+                animationDelay: `${(i % 7) * 80}ms`
               }}
             />
-            {/* desk top — tilted forward */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  'linear-gradient(to bottom, #1a1424 0%, #0d0817 100%)',
-                transform: 'rotateX(5deg)',
-                transformOrigin: 'center top'
-              }}
-            >
-              {/* matte sheen reflecting the key light */}
-              <div
-                className="absolute inset-0"
-                style={{
-                  background:
-                    'radial-gradient(110% 70% at 22% -10%, rgba(124, 58, 237, 0.10), transparent 55%)'
-                }}
-              />
-              {/* contact shadow under avatar */}
-              <div
-                className="absolute inset-x-[20%] top-0 h-4"
-                style={{
-                  background:
-                    'radial-gradient(70% 100% at 50% 0%, rgba(0,0,0,0.75), transparent 75%)'
-                }}
-              />
-              {/* very faint horizontal grain (not wood, more like fine matte) */}
-              <div
-                className="absolute inset-0 opacity-20 mix-blend-overlay"
-                style={{
-                  background:
-                    'repeating-linear-gradient(to right, transparent 0 90px, rgba(255,255,255,0.04) 90px 91px, transparent 91px 220px)'
-                }}
-              />
-            </div>
+          ))}
+        </div>
+      )}
 
-            {/* === Laptop (centre-left, glass + dark) === */}
-            <div className="absolute bottom-[22%] left-[15%] z-30 w-[26%]">
-              <div className="relative">
-                <div className="relative mx-auto h-14 w-full rounded-t-lg bg-gradient-to-b from-zinc-800 to-zinc-950 shadow-[0_10px_22px_rgba(0,0,0,0.65)] md:h-16">
-                  {/* screen */}
-                  <div className="absolute inset-1.5 overflow-hidden rounded-md bg-gradient-to-br from-violet-950/70 via-indigo-950 to-slate-950">
-                    {/* Pika-style: a single subtle waveform / connection mark */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="flex items-end gap-0.5">
-                        {[3, 5, 8, 6, 4, 7, 5, 3].map((h, i) => (
-                          <div
-                            key={i}
-                            className="w-0.5 rounded-full bg-violet-400/70"
-                            style={{ height: `${h}px` }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                    <div className="absolute right-1.5 top-1 h-1 w-1 animate-pulse rounded-full bg-rose-500" />
-                  </div>
-                  <div className="absolute left-1/2 top-1 h-0.5 w-0.5 -translate-x-1/2 rounded-full bg-white/40" />
-                </div>
-                <div className="mx-auto -mt-0.5 h-2 w-[110%] rounded-b-lg bg-gradient-to-b from-zinc-700 to-zinc-900 shadow-[0_6px_18px_rgba(0,0,0,0.6)]" />
-                <div className="mx-auto h-px w-[107%] bg-zinc-600/40" />
-                {/* cast shadow on desk */}
-                <div
-                  className="absolute -bottom-2 left-1/2 h-3 w-[115%] -translate-x-1/2 rounded-full opacity-65 blur-md"
-                  style={{ background: 'rgba(0,0,0,0.7)' }}
-                />
-              </div>
-            </div>
-
-            {/* === Coffee mug (right, paler ceramic, violet steam) === */}
-            <div className="absolute bottom-[26%] right-[16%] z-30">
-              <div className="relative">
-                <div className="absolute -top-5 left-1.5 text-[11px] leading-[1] text-violet-200/35">
-                  <span className="block animate-pulse">⌇</span>
-                </div>
-                <div
-                  className="relative h-8 w-6 rounded-b-md rounded-t-sm shadow-[0_5px_12px_rgba(0,0,0,0.6)]"
-                  style={{
-                    background:
-                      'linear-gradient(180deg, #e2e0e6 0%, #b6b3bd 100%)'
-                  }}
-                />
-                <div className="absolute -right-1.5 top-2 h-3 w-2 rounded-r-full border-2 border-[#b6b3bd] bg-transparent" />
-                <div className="absolute inset-x-0.5 top-0.5 h-1 rounded-t-sm bg-gradient-to-b from-amber-950 to-stone-950" />
-                <div
-                  className="absolute -bottom-1.5 left-1/2 h-2 w-[140%] -translate-x-1/2 rounded-full opacity-65 blur-md"
-                  style={{ background: 'rgba(0,0,0,0.65)' }}
-                />
-              </div>
-            </div>
+      {/* === LIVE CAPTION STRIP (bottom-centre, above call controls) ===
+              When AI is speaking we show the last sentence as a
+              live subtitle — Pika's signature element. */}
+      {caption && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-28 z-40 flex justify-center px-6">
+          <div
+            className="max-w-2xl rounded-xl border border-white/[0.08] px-4 py-2 text-center text-sm leading-snug text-white/95 backdrop-blur-md"
+            style={{
+              background:
+                'linear-gradient(180deg, rgba(20,16,40,0.85) 0%, rgba(12,9,28,0.85) 100%)'
+            }}
+          >
+            {caption}
           </div>
+        </div>
+      )}
 
-          {/* === Speaker tile (lower-left, glass) === */}
-          <div className="pointer-events-none absolute bottom-3 left-4 z-40">
-            <div
-              className="rounded-xl border border-white/[0.09] px-3 py-1.5 text-white/95 backdrop-blur-md"
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)'
-              }}
-            >
-              <div className="text-xs font-semibold tracking-tight leading-tight">
-                {speakerName}
-              </div>
-              {speakerHint && (
-                <div className="mt-0.5 text-[10px] leading-tight text-white/55">
-                  {speakerHint}
-                </div>
+      {/* === BOTTOM CONTROL BAR — circular call buttons ==============
+              Faux mute / captions / leave / speaker — purely decorative
+              but instantly read as "I am inside a call app". */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-40 flex items-end justify-between gap-3 p-4">
+        {/* Speaker name tile — bottom-left */}
+        <div className="pointer-events-auto rounded-xl border border-white/[0.08] px-3 py-2 text-white/95 backdrop-blur-md"
+          style={{
+            background:
+              'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)'
+          }}
+        >
+          <div className="flex items-center gap-2 text-xs font-semibold leading-tight">
+            <span
+              className={cn(
+                'inline-block h-1.5 w-1.5 rounded-full',
+                speaking ? 'animate-pulse bg-violet-400' : 'bg-white/40'
               )}
+            />
+            {speakerName}
+          </div>
+          {speakerHint && (
+            <div className="mt-0.5 text-[10px] leading-tight text-white/55">
+              {speakerHint}
+            </div>
+          )}
+        </div>
+
+        {/* Centre: control cluster */}
+        <div className="pointer-events-auto flex items-center gap-2">
+          <CallButton tone="default" icon={<Mic className="h-4 w-4" />} hint="mic" />
+          <CallButton
+            tone="default"
+            icon={<Captions className="h-4 w-4" />}
+            hint="captions"
+            active={!!caption}
+          />
+          <CallButton
+            tone="default"
+            icon={<Volume2 className="h-4 w-4" />}
+            hint="speaker"
+          />
+          <CallButton tone="leave" icon={<PhoneOff className="h-5 w-5" />} hint="leave" />
+        </div>
+
+        {/* Self-view tile — bottom-right ("YOU" thumbnail) */}
+        <div className="pointer-events-auto h-16 w-24 overflow-hidden rounded-lg border border-white/[0.10] shadow-[0_8px_20px_rgba(0,0,0,0.55)]"
+          style={{
+            background:
+              'linear-gradient(135deg, rgba(124,58,237,0.18) 0%, rgba(56,189,248,0.10) 100%)'
+          }}
+        >
+          {/* faux self-cam: avatar silhouette of user */}
+          <div className="relative h-full w-full">
+            <div className="absolute left-1/2 top-[28%] h-5 w-5 -translate-x-1/2 rounded-full bg-white/25" />
+            <div className="absolute left-1/2 top-[55%] h-6 w-9 -translate-x-1/2 rounded-t-full bg-white/20" />
+            <div className="absolute bottom-1 left-1.5 text-[9px] font-semibold tracking-wide text-white/70">
+              YOU
+            </div>
+            <div className="absolute bottom-1 right-1.5">
+              <MicOff className="h-2.5 w-2.5 text-rose-400/90" />
             </div>
           </div>
         </div>
       </div>
+
+      {/* Keyframes for the live waveform bars */}
+      <style jsx>{`
+        @keyframes wsc-bar {
+          0%, 100% { transform: scaleY(0.35); }
+          50%      { transform: scaleY(1.0); }
+        }
+      `}</style>
     </div>
   );
 }
 
 // ─── primitives ────────────────────────────────────────────────────────
 
-function GlassPill({ children }: { children: React.ReactNode }) {
+function GlassPill({
+  children,
+  subtle = false
+}: {
+  children: React.ReactNode;
+  subtle?: boolean;
+}) {
   return (
     <span
-      className="pointer-events-none inline-flex items-center gap-1.5 rounded-full border border-white/[0.10] px-3 py-1 text-[11px] text-white/85 backdrop-blur-md"
+      className={cn(
+        'pointer-events-auto inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] backdrop-blur-md',
+        subtle
+          ? 'border-white/[0.06] text-white/75'
+          : 'border-white/[0.10] text-white/90'
+      )}
       style={{
-        background:
-          'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)'
+        background: subtle
+          ? 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.015) 100%)'
+          : 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.025) 100%)'
       }}
     >
       {children}
     </span>
+  );
+}
+
+function CallButton({
+  icon,
+  hint,
+  tone,
+  active = false
+}: {
+  icon: React.ReactNode;
+  hint: string;
+  tone: 'default' | 'leave';
+  active?: boolean;
+}) {
+  const base =
+    'group relative inline-flex h-11 w-11 items-center justify-center rounded-full border backdrop-blur-md transition-all duration-200';
+  const palette =
+    tone === 'leave'
+      ? 'border-rose-400/50 bg-rose-500/85 text-white shadow-[0_0_22px_-4px_rgba(244,63,94,0.75)] hover:bg-rose-500'
+      : active
+      ? 'border-violet-400/60 bg-violet-500/40 text-white shadow-[0_0_18px_-4px_rgba(139,92,246,0.75)]'
+      : 'border-white/[0.12] text-white/85 hover:bg-white/[0.08]';
+  const inactiveBg =
+    tone === 'default' && !active
+      ? 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)'
+      : undefined;
+  return (
+    <button
+      type="button"
+      aria-label={hint}
+      title={hint}
+      className={cn(base, palette)}
+      style={inactiveBg ? { background: inactiveBg } : undefined}
+    >
+      {icon}
+    </button>
   );
 }
 
@@ -298,8 +300,26 @@ function useClock(): string {
   return now;
 }
 
+/** Counts up from mount — feels like a real call duration */
+function useCallDuration(): string {
+  const [secs, setSecs] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setSecs((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const mm = String(Math.floor(secs / 60)).padStart(2, '0');
+  const ss = String(secs % 60).padStart(2, '0');
+  return `${mm}:${ss}`;
+}
+
 function fmt(d: Date): string {
   const hh = String(d.getHours()).padStart(2, '0');
   const mm = String(d.getMinutes()).padStart(2, '0');
   return `${hh}:${mm}`;
+}
+
+/** Deterministic-ish bar heights so re-renders don't flash randomly. */
+function randomBarHeight(i: number): number {
+  const seq = [40, 65, 85, 70, 55, 75, 90, 60, 45, 70, 80, 50, 65, 90, 55, 70, 45, 80, 60, 70, 55, 85, 65, 50];
+  return seq[i % seq.length];
 }

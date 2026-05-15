@@ -42,8 +42,8 @@ export const AVATARS: Record<AvatarId, AvatarConfig> = {
     emoji: '🎨',
     modelUrl: '/live2d/models/Mao/runtime/Mao.model3.json',
     anchorX: 0.5,
-    anchorY: 0.02,
-    scale: 1.85,
+    anchorY: -0.05,
+    scale: 2.3,
     expressions: {
       confident: 'exp_01',
       thoughtful: 'exp_05',
@@ -65,9 +65,10 @@ export const AVATARS: Record<AvatarId, AvatarConfig> = {
     blurb: 'WSC senior · scholar track',
     emoji: '🎩',
     modelUrl: '/live2d/models/Natori/runtime/Natori.model3.json',
+    // Crop tighter — call tile shows shoulders & head only (Pika-style).
     anchorX: 0.5,
-    anchorY: 0.02,
-    scale: 1.6,
+    anchorY: -0.05,
+    scale: 2.1,
     expressions: {
       confident: 'Smile',
       thoughtful: 'exp_01',
@@ -89,8 +90,8 @@ export const AVATARS: Record<AvatarId, AvatarConfig> = {
     emoji: '🌸',
     modelUrl: '/live2d/models/Hiyori/runtime/Hiyori.model3.json',
     anchorX: 0.5,
-    anchorY: 0.04,
-    scale: 1.6,
+    anchorY: -0.05,
+    scale: 2.0,
     // Hiyori sample ships with no .exp3.json files — expression() calls are no-ops.
     // Listed for type completeness only.
     expressions: {
