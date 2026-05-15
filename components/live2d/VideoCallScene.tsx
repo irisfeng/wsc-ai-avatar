@@ -5,21 +5,24 @@ import { Signal, Mic2, Wifi } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
- * Video-call scene wrapper around the Live2D stage.
+ * Video-call scene wrapper — Pika-inspired aesthetic.
  *
- * Built entirely from CSS — no image assets. Pseudo-3D depth is achieved
- * through parallax layers (back wall → bookshelf → window beam → desk),
- * perspective transforms on the desk plane, soft drop-shadows under desk
- * objects, and warm radial gradients simulating ambient + key lighting.
+ * Design rules (one liners):
+ *  - **Deep charcoal** background, never warm tones.
+ *  - **Single accent**: violet/indigo. No second palette.
+ *  - **Glass morphism** on every floating UI chip (backdrop blur + 6%
+ *    white fill + 1px white-12% border).
+ *  - **One key light** — cool radial from upper-left; subtle warm fill
+ *    from upper-right at <20% alpha so the avatar's skin still reads.
+ *  - **No decoration that competes with the avatar.** No bookshelves,
+ *    no plants, no picture frames — just a desk, a laptop, a mug.
+ *  - Borders/radii are consistent: 16px outer frame, 12px chips, 8px desk
+ *    objects.
  */
 interface Props {
-  /** name shown in the lower-left "tile name" overlay */
   speakerName: string;
-  /** one-line subtitle under the name */
   speakerHint?: string;
-  /** when true, frame border pulses to signal "AI speaking" */
   speaking?: boolean;
-  /** anything you want anchored to the top-right of the camera frame */
   topRightSlot?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
@@ -35,261 +38,230 @@ export function VideoCallScene({
 }: Props) {
   const clock = useClock();
   return (
-    <div className={cn('relative h-full w-full overflow-hidden', className)}>
-      {/* === LAYER 0 — back wall (warmest, dimmest) =================== */}
+    <div
+      className={cn('relative h-full w-full overflow-hidden', className)}
+      style={{ background: '#08060f' }}
+    >
+      {/* === Backdrop: deep charcoal with violet radial glow ============
+          Two radial gradients establish depth without illustration —
+          one violet pulse from upper-left as the key light, one cool
+          indigo wash on the far right for ambient fill. */}
       <div
         aria-hidden
         className="absolute inset-0"
         style={{
           background: [
-            // warm wall colour graded top→bottom
-            'linear-gradient(to bottom, #2a1f3d 0%, #1f1830 45%, #1a1428 100%)'
+            'radial-gradient(80% 70% at 18% 18%, rgba(124, 58, 237, 0.32), transparent 55%)',
+            'radial-gradient(70% 80% at 92% 38%, rgba(99, 102, 241, 0.18), transparent 60%)',
+            'radial-gradient(120% 80% at 50% 110%, rgba(0,0,0,0.6), transparent 60%)',
+            'linear-gradient(180deg, #0d0a1a 0%, #08060f 100%)'
           ].join(',')
         }}
       />
 
-      {/* === LAYER 1 — distant bookshelf (FAR PLANE, blurred) ========= */}
+      {/* === Subtle film grain (low-frequency dots, near-monochrome) ====
+          Two faint white pin-pricks instead of the previous 5 coloured
+          bokeh dots — depth cue without colour noise. */}
       <div
         aria-hidden
-        className="absolute inset-x-[6%] top-[8%] h-[45%] opacity-65"
-        style={{
-          // each "shelf" is a horizontal band with darker bottom = receding
-          background: [
-            // book-spine pattern, two-tone palette + irregular widths
-            'repeating-linear-gradient(90deg, #d97706 0 5px, transparent 5px 10px, #db2777 10px 17px, transparent 17px 22px, #4cc9f0 22px 30px, transparent 30px 36px, #ffd166 36px 41px, transparent 41px 48px, #7c3aed 48px 56px, transparent 56px 63px)',
-            // shelf board separators
-            'linear-gradient(to bottom, transparent 0%, transparent 24%, rgba(0,0,0,0.55) 24%, rgba(0,0,0,0.55) 28%, transparent 28%, transparent 56%, rgba(0,0,0,0.55) 56%, rgba(0,0,0,0.55) 60%, transparent 60%, transparent 88%, rgba(0,0,0,0.55) 88%, rgba(0,0,0,0.55) 92%)'
-          ].join(','),
-          filter: 'blur(0.6px)',
-          // slight perspective so the shelf has subtle vanishing-point feel
-          transform: 'perspective(900px) rotateX(8deg)',
-          transformOrigin: 'center 30%'
-        }}
-      />
-
-      {/* === LAYER 2 — soft framed picture (depth marker, left) ====== */}
-      <div
-        aria-hidden
-        className="absolute left-[8%] top-[12%] h-[12%] w-[8%] rounded-sm border border-amber-200/30 bg-gradient-to-br from-amber-300/15 to-rose-300/10 shadow-[0_4px_12px_rgba(0,0,0,0.5)]"
-        style={{ transform: 'perspective(900px) rotateX(6deg)' }}
-      />
-
-      {/* === LAYER 3 — hanging plant (right side, breaks symmetry) === */}
-      <div
-        aria-hidden
-        className="absolute right-[7%] top-[6%] h-[18%] w-[5%]"
-      >
-        {/* pot */}
-        <div className="absolute bottom-1/3 left-1/2 h-[20%] w-full -translate-x-1/2 rounded-b-md bg-gradient-to-b from-amber-900/70 to-amber-950/80" />
-        {/* leaves — 3 ovals fanning */}
-        <div className="absolute bottom-[35%] left-1/2 h-3/4 w-full -translate-x-1/2">
-          <div className="absolute left-1/2 top-0 h-full w-2/3 -translate-x-[80%] -rotate-12 rounded-full bg-gradient-to-b from-emerald-700/65 to-emerald-900/45" />
-          <div className="absolute left-1/2 top-0 h-full w-2/3 -translate-x-1/2 rounded-full bg-gradient-to-b from-emerald-600/65 to-emerald-900/45" />
-          <div className="absolute left-1/2 top-0 h-full w-2/3 translate-x-[-20%] rotate-12 rounded-full bg-gradient-to-b from-emerald-700/65 to-emerald-900/45" />
-        </div>
-      </div>
-
-      {/* === LAYER 4 — window light beam (NEAR-WALL, key light) ===== */}
-      <div
-        aria-hidden
-        className="absolute inset-0"
+        className="absolute inset-0 opacity-25"
         style={{
           background: [
-            // angled warm beam from upper-right
-            'linear-gradient(225deg, rgba(255,209,102,0.18) 0%, rgba(255,209,102,0.06) 18%, transparent 35%)',
-            // soft cyan rim from upper-left (cool fill)
-            'radial-gradient(80% 60% at 8% 10%, rgba(76,201,240,0.10), transparent 50%)'
+            'radial-gradient(circle at 70% 22%, rgba(255,255,255,0.20) 0, transparent 0.25%)',
+            'radial-gradient(circle at 30% 70%, rgba(255,255,255,0.15) 0, transparent 0.22%)'
           ].join(',')
         }}
       />
 
-      {/* === LAYER 5 — bokeh particles (foreground depth) =========== */}
-      <div
-        aria-hidden
-        className="absolute inset-0 opacity-40"
-        style={{
-          background: [
-            'radial-gradient(circle at 18% 22%, rgba(255,209,102,0.55) 0, transparent 0.5%)',
-            'radial-gradient(circle at 72% 14%, rgba(255,209,102,0.45) 0, transparent 0.35%)',
-            'radial-gradient(circle at 24% 58%, rgba(76,201,240,0.55) 0, transparent 0.45%)',
-            'radial-gradient(circle at 88% 48%, rgba(255,107,107,0.45) 0, transparent 0.35%)',
-            'radial-gradient(circle at 55% 38%, rgba(255,255,255,0.30) 0, transparent 0.25%)'
-          ].join(',')
-        }}
-      />
-
-      {/* === LAYER 6 — the camera-frame chrome ======================= */}
+      {/* === Camera frame ================================================
+          Glass-morphism border. Pulses violet on speaking. */}
       <div className="absolute inset-4 md:inset-8">
         <div
           className={cn(
-            'relative h-full w-full overflow-hidden rounded-2xl border bg-black/10 transition-shadow duration-300',
+            'relative h-full w-full overflow-hidden rounded-2xl border backdrop-blur-[2px] transition-shadow duration-500',
             speaking
-              ? 'border-wsc-accent/70 shadow-[0_0_36px_rgba(255,107,107,0.35)]'
-              : 'border-white/15 shadow-[0_12px_40px_rgba(0,0,0,0.5)]'
+              ? 'border-violet-400/45 shadow-[0_0_42px_-4px_rgba(139,92,246,0.55),0_8px_36px_rgba(0,0,0,0.55)]'
+              : 'border-white/[0.09] shadow-[0_8px_42px_rgba(0,0,0,0.55)]'
           )}
+          style={{
+            background:
+              'linear-gradient(135deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0.005) 100%)'
+          }}
         >
-          {/* === Status bar (top of the camera frame) === */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 py-2 text-[11px] text-white/85">
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  'inline-flex items-center gap-1 rounded-full bg-black/45 px-2 py-0.5 backdrop-blur',
-                  speaking && 'text-wsc-accent'
-                )}
-              >
+          {/* === Status bar (top) ===
+              Three glass pills: LIVE+clock, avatar picker slot, signal */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between px-4 py-3">
+            <GlassPill>
+              <span className="flex items-center gap-1.5">
                 <span
                   className={cn(
                     'inline-block h-1.5 w-1.5 rounded-full',
-                    speaking ? 'animate-pulse bg-wsc-accent' : 'bg-red-500'
+                    speaking
+                      ? 'animate-pulse bg-violet-400'
+                      : 'bg-rose-500'
                   )}
                 />
-                LIVE
+                <span
+                  className={cn(
+                    'font-medium tracking-wide',
+                    speaking && 'text-violet-200'
+                  )}
+                >
+                  LIVE
+                </span>
               </span>
-              <span className="rounded-full bg-black/45 px-2 py-0.5 font-mono backdrop-blur">
+              <span className="mx-2 h-3 w-px bg-white/15" />
+              <span className="font-mono tabular-nums text-white/70">
                 {clock}
               </span>
-            </div>
+            </GlassPill>
             <div className="flex items-center gap-2">
               {topRightSlot}
-              <span className="flex items-center gap-2 rounded-full bg-black/45 px-2 py-0.5 backdrop-blur">
-                <Wifi className="h-3 w-3" />
-                <Signal className="h-3 w-3 opacity-90" />
-                <Mic2 className={cn('h-3 w-3', speaking && 'text-wsc-accent')} />
-              </span>
+              <GlassPill>
+                <Wifi className="h-3 w-3 text-white/70" />
+                <Signal className="h-3 w-3 text-white/70" />
+                <Mic2
+                  className={cn(
+                    'h-3 w-3',
+                    speaking ? 'text-violet-300' : 'text-white/70'
+                  )}
+                />
+              </GlassPill>
             </div>
           </div>
 
-          {/* === The Live2D canvas slot === */}
+          {/* === Live2D canvas === */}
           <div className="absolute inset-0 z-10">{children}</div>
 
-          {/* === LAYER 7 — DESK PLANE (tilted, near-field) ============== */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[42%]">
-            {/* subtle vanishing-point tilt for the whole desk plane */}
+          {/* === Vignette to push the avatar centre forward === */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-10"
+            style={{
+              background:
+                'radial-gradient(140% 100% at 50% 40%, transparent 50%, rgba(0,0,0,0.45) 100%)'
+            }}
+          />
+
+          {/* === DESK ====================================================
+              Single tilted plane, dark walnut tone, perfectly minimal.
+              The desk's top edge is a thin violet-tinted highlight that
+              echoes the key light. */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-[44%]">
+            {/* horizon highlight (violet-tinted) */}
+            <div
+              className="absolute inset-x-0 top-0 h-px"
+              style={{
+                background:
+                  'linear-gradient(to right, transparent, rgba(167, 139, 250, 0.45) 25%, rgba(167, 139, 250, 0.45) 75%, transparent)',
+                boxShadow: '0 1px 14px rgba(167, 139, 250, 0.18)'
+              }}
+            />
+            {/* desk top — tilted forward */}
             <div
               className="absolute inset-0"
               style={{
-                transformStyle: 'preserve-3d',
-                perspective: '1100px'
+                background:
+                  'linear-gradient(to bottom, #1a1424 0%, #0d0817 100%)',
+                transform: 'rotateX(5deg)',
+                transformOrigin: 'center top'
               }}
             >
-              {/* sharp horizon line where the desk meets the room behind */}
-              <div
-                className="absolute inset-x-0 top-0 h-[2px]"
-                style={{
-                  background:
-                    'linear-gradient(to right, transparent, rgba(255,209,102,0.55) 22%, rgba(255,209,102,0.55) 78%, transparent)',
-                  boxShadow: '0 1px 6px rgba(255,209,102,0.20)'
-                }}
-              />
-
-              {/* the desk top — slightly tilted forward via rotateX */}
+              {/* matte sheen reflecting the key light */}
               <div
                 className="absolute inset-0"
                 style={{
-                  background: [
-                    // base wood colour
-                    'linear-gradient(to bottom, rgba(96,67,42,1) 0%, rgba(54,37,22,1) 100%)'
-                  ].join(','),
-                  transform: 'rotateX(6deg)',
-                  transformOrigin: 'center top'
+                  background:
+                    'radial-gradient(110% 70% at 22% -10%, rgba(124, 58, 237, 0.10), transparent 55%)'
                 }}
-              >
-                {/* wood grain */}
-                <div
-                  className="absolute inset-0 opacity-30"
-                  style={{
-                    background:
-                      'repeating-linear-gradient(to right, transparent 0 26px, rgba(255,209,102,0.12) 26px 27px, transparent 27px 90px), repeating-linear-gradient(to right, transparent 0 140px, rgba(0,0,0,0.18) 140px 142px, transparent 142px 300px)'
-                  }}
-                />
-                {/* desk-lamp pool of warm light from upper-right */}
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background:
-                      'radial-gradient(120% 90% at 82% -8%, rgba(255,209,102,0.22), transparent 55%)'
-                  }}
-                />
-                {/* contact shadow under the avatar (centred) */}
-                <div
-                  className="absolute inset-x-[25%] top-0 h-3"
-                  style={{
-                    background:
-                      'radial-gradient(60% 100% at 50% 0%, rgba(0,0,0,0.55), transparent 70%)'
-                  }}
-                />
-              </div>
+              />
+              {/* contact shadow under avatar */}
+              <div
+                className="absolute inset-x-[20%] top-0 h-4"
+                style={{
+                  background:
+                    'radial-gradient(70% 100% at 50% 0%, rgba(0,0,0,0.75), transparent 75%)'
+                }}
+              />
+              {/* very faint horizontal grain (not wood, more like fine matte) */}
+              <div
+                className="absolute inset-0 opacity-20 mix-blend-overlay"
+                style={{
+                  background:
+                    'repeating-linear-gradient(to right, transparent 0 90px, rgba(255,255,255,0.04) 90px 91px, transparent 91px 220px)'
+                }}
+              />
             </div>
 
-            {/* === Desk objects (sit above the tilted desktop) === */}
-            {/* Laptop, left of centre, with cast shadow */}
-            <div className="absolute bottom-[20%] left-[14%] z-20 w-[26%]">
+            {/* === Laptop (centre-left, glass + dark) === */}
+            <div className="absolute bottom-[22%] left-[15%] z-30 w-[26%]">
               <div className="relative">
-                {/* lid */}
-                <div className="relative mx-auto h-12 w-full rounded-t-md bg-gradient-to-b from-zinc-700 to-zinc-900 shadow-[0_8px_18px_rgba(0,0,0,0.6)] md:h-16">
+                <div className="relative mx-auto h-14 w-full rounded-t-lg bg-gradient-to-b from-zinc-800 to-zinc-950 shadow-[0_10px_22px_rgba(0,0,0,0.65)] md:h-16">
                   {/* screen */}
-                  <div className="absolute inset-1 overflow-hidden rounded-sm bg-gradient-to-br from-sky-900 to-slate-900">
-                    {/* fake speaker tile grid */}
-                    <div className="absolute inset-1.5 grid grid-cols-2 gap-0.5 opacity-90">
-                      <div className="rounded-sm bg-sky-700/40" />
-                      <div className="rounded-sm bg-rose-700/40" />
-                      <div className="rounded-sm bg-emerald-700/40" />
-                      <div className="rounded-sm bg-amber-700/40" />
+                  <div className="absolute inset-1.5 overflow-hidden rounded-md bg-gradient-to-br from-violet-950/70 via-indigo-950 to-slate-950">
+                    {/* Pika-style: a single subtle waveform / connection mark */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="flex items-end gap-0.5">
+                        {[3, 5, 8, 6, 4, 7, 5, 3].map((h, i) => (
+                          <div
+                            key={i}
+                            className="w-0.5 rounded-full bg-violet-400/70"
+                            style={{ height: `${h}px` }}
+                          />
+                        ))}
+                      </div>
                     </div>
-                    {/* small "REC" dot top-right */}
-                    <div className="absolute right-1 top-1 h-1 w-1 animate-pulse rounded-full bg-rose-500" />
+                    <div className="absolute right-1.5 top-1 h-1 w-1 animate-pulse rounded-full bg-rose-500" />
                   </div>
-                  {/* webcam dot */}
-                  <div className="absolute left-1/2 top-0.5 h-0.5 w-0.5 -translate-x-1/2 rounded-full bg-white/60" />
+                  <div className="absolute left-1/2 top-1 h-0.5 w-0.5 -translate-x-1/2 rounded-full bg-white/40" />
                 </div>
-                {/* base */}
-                <div className="mx-auto -mt-0.5 h-1.5 w-[108%] rounded-b-md bg-gradient-to-b from-zinc-600 to-zinc-800 shadow-[0_6px_14px_rgba(0,0,0,0.55)]" />
-                {/* hinge highlight */}
-                <div className="mx-auto h-px w-[105%] bg-zinc-500/60" />
-                {/* cast shadow ON the desk */}
+                <div className="mx-auto -mt-0.5 h-2 w-[110%] rounded-b-lg bg-gradient-to-b from-zinc-700 to-zinc-900 shadow-[0_6px_18px_rgba(0,0,0,0.6)]" />
+                <div className="mx-auto h-px w-[107%] bg-zinc-600/40" />
+                {/* cast shadow on desk */}
                 <div
-                  className="absolute -bottom-1 left-1/2 h-2 w-[110%] -translate-x-1/2 rounded-full opacity-65 blur-sm"
-                  style={{ background: 'rgba(0,0,0,0.55)' }}
+                  className="absolute -bottom-2 left-1/2 h-3 w-[115%] -translate-x-1/2 rounded-full opacity-65 blur-md"
+                  style={{ background: 'rgba(0,0,0,0.7)' }}
                 />
               </div>
             </div>
 
-            {/* Coffee mug — right side, with steam + cast shadow */}
-            <div className="absolute bottom-[24%] right-[16%] z-20">
+            {/* === Coffee mug (right, paler ceramic, violet steam) === */}
+            <div className="absolute bottom-[26%] right-[16%] z-30">
               <div className="relative">
-                {/* steam wisps */}
-                <div className="absolute -top-5 left-1.5 text-[10px] leading-[1] text-white/40">
+                <div className="absolute -top-5 left-1.5 text-[11px] leading-[1] text-violet-200/35">
                   <span className="block animate-pulse">⌇</span>
                 </div>
-                {/* mug body */}
                 <div
-                  className="relative h-7 w-6 rounded-b-md rounded-t-sm shadow-[0_5px_10px_rgba(0,0,0,0.5)]"
+                  className="relative h-8 w-6 rounded-b-md rounded-t-sm shadow-[0_5px_12px_rgba(0,0,0,0.6)]"
                   style={{
                     background:
-                      'linear-gradient(to bottom, #fdfbf6 0%, #d9d4c4 100%)'
+                      'linear-gradient(180deg, #e2e0e6 0%, #b6b3bd 100%)'
                   }}
                 />
-                {/* handle */}
-                <div className="absolute -right-1.5 top-1.5 h-3 w-2 rounded-r-full border-2 border-[#d9d4c4] bg-transparent" />
-                {/* coffee surface */}
-                <div className="absolute inset-x-0.5 top-0.5 h-1 rounded-t-sm bg-gradient-to-b from-amber-900 to-amber-950" />
-                {/* cast shadow */}
+                <div className="absolute -right-1.5 top-2 h-3 w-2 rounded-r-full border-2 border-[#b6b3bd] bg-transparent" />
+                <div className="absolute inset-x-0.5 top-0.5 h-1 rounded-t-sm bg-gradient-to-b from-amber-950 to-stone-950" />
                 <div
-                  className="absolute -bottom-1 left-1/2 h-1.5 w-[140%] -translate-x-1/2 rounded-full opacity-60 blur-sm"
-                  style={{ background: 'rgba(0,0,0,0.5)' }}
+                  className="absolute -bottom-1.5 left-1/2 h-2 w-[140%] -translate-x-1/2 rounded-full opacity-65 blur-md"
+                  style={{ background: 'rgba(0,0,0,0.65)' }}
                 />
               </div>
             </div>
           </div>
 
-          {/* === Speaker label (lower-left tile name) === */}
-          <div className="pointer-events-none absolute bottom-3 left-4 z-30 flex items-end gap-2 text-white/95">
-            <div className="rounded-md bg-black/55 px-2 py-1 backdrop-blur">
-              <div className="text-xs font-semibold leading-tight">
+          {/* === Speaker tile (lower-left, glass) === */}
+          <div className="pointer-events-none absolute bottom-3 left-4 z-40">
+            <div
+              className="rounded-xl border border-white/[0.09] px-3 py-1.5 text-white/95 backdrop-blur-md"
+              style={{
+                background:
+                  'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)'
+              }}
+            >
+              <div className="text-xs font-semibold tracking-tight leading-tight">
                 {speakerName}
               </div>
               {speakerHint && (
-                <div className="text-[10px] leading-tight text-white/60">
+                <div className="mt-0.5 text-[10px] leading-tight text-white/55">
                   {speakerHint}
                 </div>
               )}
@@ -298,6 +270,22 @@ export function VideoCallScene({
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── primitives ────────────────────────────────────────────────────────
+
+function GlassPill({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      className="pointer-events-none inline-flex items-center gap-1.5 rounded-full border border-white/[0.10] px-3 py-1 text-[11px] text-white/85 backdrop-blur-md"
+      style={{
+        background:
+          'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)'
+      }}
+    >
+      {children}
+    </span>
   );
 }
 
