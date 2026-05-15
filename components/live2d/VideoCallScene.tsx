@@ -117,13 +117,25 @@ export function VideoCallScene({
           {/* === The Live2D canvas slot === */}
           <div className="absolute inset-0 z-10">{children}</div>
 
-          {/* === Desk surface (bottom 14% of the frame) === */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[14%]">
+          {/* === Desk surface (bottom 38% of the frame) ===
+              Tall on purpose: covers the avatar's lower body and creates the
+              "sitting at a desk" illusion without needing a true seated model.
+           */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[38%]">
+            {/* sharp top edge of the desk — the visual "horizon" line */}
+            <div
+              className="absolute inset-x-0 top-0 h-px"
+              style={{
+                background:
+                  'linear-gradient(to right, transparent, rgba(255,209,102,0.45) 20%, rgba(255,209,102,0.45) 80%, transparent)'
+              }}
+            />
+            {/* desk surface — opaque so it actually OCCLUDES the avatar legs */}
             <div
               className="absolute inset-0"
               style={{
                 background:
-                  'linear-gradient(to bottom, transparent 0%, rgba(115, 80, 50, 0.55) 35%, rgba(82, 56, 34, 0.85) 100%)'
+                  'linear-gradient(to bottom, rgba(86, 60, 38, 0.92) 0%, rgba(60, 41, 26, 1) 100%)'
               }}
             />
             {/* subtle wood grain via horizontal lines */}
@@ -131,18 +143,62 @@ export function VideoCallScene({
               className="absolute inset-0 opacity-25"
               style={{
                 background:
-                  'repeating-linear-gradient(to right, rgba(255,209,102,0.0) 0 18px, rgba(255,209,102,0.08) 18px 19px, rgba(255,209,102,0.0) 19px 60px)'
+                  'repeating-linear-gradient(to right, rgba(255,209,102,0.0) 0 24px, rgba(255,209,102,0.10) 24px 25px, rgba(255,209,102,0.0) 25px 80px)'
               }}
             />
-            {/* tiny notebook icon at left of desk */}
-            <div className="absolute bottom-2 left-4 flex items-center gap-1.5 text-[10px] text-wsc-paper/55">
-              <div className="relative">
-                <div className="h-3 w-3.5 rounded-sm border border-wsc-paper/40 bg-wsc-paper/10" />
-                <div className="absolute left-0.5 right-0.5 top-1 h-px bg-wsc-paper/40" />
-                <div className="absolute left-0.5 right-0.5 top-1.5 h-px bg-wsc-paper/40" />
+            {/* warm desk-lamp highlight from upper-right */}
+            <div
+              className="absolute inset-0 opacity-50"
+              style={{
+                background:
+                  'radial-gradient(140% 80% at 85% -5%, rgba(255,209,102,0.18), transparent 50%)'
+              }}
+            />
+
+            {/* === Desk objects === */}
+            {/* Laptop — left of centre */}
+            <div className="absolute bottom-[18%] left-[12%] w-[28%]">
+              {/* lid (back panel) */}
+              <div className="relative mx-auto h-12 w-full rounded-t-md bg-zinc-800 shadow-[0_6px_12px_rgba(0,0,0,0.4)] md:h-16">
+                {/* screen */}
+                <div className="absolute inset-1 rounded-sm bg-gradient-to-br from-sky-900/80 to-slate-900/90">
+                  {/* faux text rows */}
+                  <div className="absolute inset-x-2 top-2 h-px bg-wsc-calm/70" />
+                  <div className="absolute inset-x-2 top-3.5 h-px bg-white/30" />
+                  <div className="absolute inset-x-2 top-5 h-px w-3/4 bg-white/30" />
+                  <div className="absolute inset-x-2 top-6.5 h-px w-1/2 bg-white/30" />
+                </div>
+                {/* webcam dot */}
+                <div className="absolute left-1/2 top-0.5 h-0.5 w-0.5 -translate-x-1/2 rounded-full bg-white/60" />
               </div>
-              <span>prep notes</span>
+              {/* base / keyboard */}
+              <div className="mx-auto -mt-0.5 h-1.5 w-[108%] rounded-b-md bg-zinc-700 shadow-[0_4px_10px_rgba(0,0,0,0.35)]" />
+              {/* hinge highlight */}
+              <div className="mx-auto h-px w-[105%] bg-zinc-500/60" />
             </div>
+
+            {/* Coffee mug — right side */}
+            <div className="absolute bottom-[22%] right-[14%]">
+              <div className="relative">
+                {/* mug body */}
+                <div
+                  className="h-7 w-6 rounded-b-md rounded-t-sm shadow-[0_4px_8px_rgba(0,0,0,0.35)]"
+                  style={{
+                    background:
+                      'linear-gradient(to bottom, #fdfbf6 0%, #e8e4d8 100%)'
+                  }}
+                />
+                {/* handle */}
+                <div className="absolute -right-1.5 top-1.5 h-3 w-2 rounded-r-full border-2 border-[#e8e4d8] bg-transparent" />
+                {/* coffee surface */}
+                <div className="absolute inset-x-0.5 top-0.5 h-1 rounded-t-sm bg-gradient-to-b from-amber-900 to-amber-950" />
+                {/* steam */}
+                <div className="absolute -top-3 left-1 text-[8px] text-white/30">
+                  ⌇
+                </div>
+              </div>
+            </div>
+
           </div>
 
           {/* === Speaker label (lower-left, like Zoom's tile name) === */}

@@ -28,20 +28,21 @@ export interface AvatarConfig {
 }
 
 export const AVATARS: Record<AvatarConfig['id'], AvatarConfig> = {
-  // Mao — Live2D Inc. half-body sample. Business attire (jacket, glasses-ish),
-  // chest-up framing — purpose-built for "video call" / desk scenes.
-  // 8 expressions exp_01–exp_08. Mapping below is a reasonable first guess;
-  // tune empirically (each can be re-bound in 10 s).
+  // Mao — Live2D Inc. Cubism 5 sample. The character design is a magical-
+  // artist / wizard girl (witch hat, paint-splashed jacket, paintbrush
+  // "staff") — NOT business attire as I initially assumed. The model is
+  // full-body. To make her work for a "video call from a desk" scene we
+  // zoom in hard (scale 1.85) and anchor near the top of the camera frame
+  // so legs are pushed past the bottom and visually replaced by the desk
+  // surface in VideoCallScene. 8 expressions exp_01–exp_08.
   mao: {
     id: 'mao',
-    label: 'Mao · 商务',
-    blurb: 'WSC senior debater · business attire',
+    label: 'Mao · 创意辩手',
+    blurb: 'WSC senior · creative arts track',
     modelUrl: '/live2d/models/Mao/runtime/Mao.model3.json',
-    // Mao is already framed chest-up; we scale her bigger and shift down
-    // so her shoulders rest near the bottom of the camera frame.
     anchorX: 0.5,
-    anchorY: 0.42,
-    scale: 1.2,
+    anchorY: 0.02,
+    scale: 1.85,
     expressions: {
       confident: 'exp_01',
       thoughtful: 'exp_05',
@@ -54,15 +55,16 @@ export const AVATARS: Record<AvatarConfig['id'], AvatarConfig> = {
       angry: 'exp_07'
     }
   },
-  // Hiyori — full-body kawaii junior. Kept as a "casual practice" alt avatar.
+  // Hiyori — full-body kawaii junior. Same hard-zoom strategy as Mao so
+  // the desk surface in VideoCallScene visually replaces her lower body.
   hiyori: {
     id: 'hiyori',
     label: 'Hiyori · 同龄',
     blurb: 'WSC peer debater · junior section',
     modelUrl: '/live2d/models/Hiyori/runtime/Hiyori.model3.json',
-    anchorX: 0.42,
-    anchorY: 0.6,
-    scale: 0.82,
+    anchorX: 0.5,
+    anchorY: 0.04,
+    scale: 1.6,
     // Hiyori sample ships with no .exp3.json files — expression() calls are no-ops.
     // Listed for type completeness only.
     expressions: {
