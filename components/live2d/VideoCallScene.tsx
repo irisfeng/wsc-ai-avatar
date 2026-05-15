@@ -216,13 +216,10 @@ export function VideoCallScene({
         </div>
       </div>
 
-      {/* Keyframes for the live waveform bars */}
-      <style jsx>{`
-        @keyframes wsc-bar {
-          0%, 100% { transform: scaleY(0.35); }
-          50%      { transform: scaleY(1.0); }
-        }
-      `}</style>
+      {/* keyframes for the live waveform bars live in app/globals.css —
+          Next 15 App Router doesn't ship styled-jsx by default and we
+          have a one-rule animation, so a global keyframe is the
+          right-sized hammer here. */}
     </div>
   );
 }

@@ -31,3 +31,10 @@ body {
 .chip {
   @apply inline-flex items-center rounded-full bg-white/10 px-2.5 py-0.5 text-xs;
 }
+
+/* Audio waveform bars in VideoCallScene — referenced inline as
+   `animation: wsc-bar Xs ease-in-out infinite` on each <span>. */
+@keyframes wsc-bar {
+  0%, 100% { transform: scaleY(0.35); }
+  50%      { transform: scaleY(1);    }
+}
