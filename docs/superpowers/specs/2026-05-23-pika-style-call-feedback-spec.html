@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pika-style Debate Call Skill Spec</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #08090d;
+        --panel: #11131a;
+        --panel-2: #171923;
+        --line: rgba(255, 255, 255, 0.1);
+        --text: #f4f2ec;
+        --muted: rgba(244, 242, 236, 0.64);
+        --soft: rgba(244, 242, 236, 0.42);
+        --accent: #ff4f78;
+        --calm: #8fd3c8;
+        --amber: #f4c76b;
+        --violet: #a89bff;
+        --good: #85d996;
+        --warn: #f3b45c;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        letter-spacing: 0;
+      }
+
+      main {
+        min-height: 100vh;
+      }
+
+      .shell {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+      }
+
+      .hero {
+        padding: 48px 0 24px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 6px 10px;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.04);
+        font-size: 13px;
+      }
+
+      h1 {
+        max-width: 920px;
+        margin: 18px 0 12px;
+        font-size: clamp(34px, 6vw, 72px);
+        line-height: 0.96;
+        font-weight: 760;
+      }
+
+      .lead {
+        max-width: 760px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.55;
+      }
+
+      .grid {
+        display: grid;
+        gap: 16px;
+      }
+
+      .grid.two {
+        grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+      }
+
+      .grid.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .section {
+        padding: 28px 0;
+      }
+
+      .card,
+      .call,
+      .panel {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        border-radius: 8px;
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      .card h2,
+      .card h3,
+      .panel h3 {
+        margin: 0 0 10px;
+      }
+
+      .card p,
+      .card li,
+      .panel p,
+      .panel li {
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .tag-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .tag {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 6px 9px;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.035);
+        font-size: 12px;
+      }
+
+      .call {
+        overflow: hidden;
+        min-height: 580px;
+        display: grid;
+        grid-template-columns: 80px minmax(0, 1fr) 320px;
+        background: #07080b;
+      }
+
+      .rail {
+        border-right: 1px solid var(--line);
+        background: #050608;
+        padding: 14px 10px;
+      }
+
+      .avatar-dot {
+        width: 48px;
+        height: 48px;
+        margin: 0 auto 20px;
+        border-radius: 50%;
+        background:
+          radial-gradient(circle at 48% 34%, #f9d3d9 0 18%, transparent 19%),
+          radial-gradient(circle at 36% 42%, #25203b 0 35%, transparent 36%),
+          #272131;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+      }
+
+      .rail-icon {
+        width: 42px;
+        height: 42px;
+        margin: 8px auto;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        color: var(--soft);
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .rail-icon.active {
+        color: white;
+        background: rgba(168, 155, 255, 0.22);
+        border: 1px solid rgba(168, 155, 255, 0.34);
+      }
+
+      .stage {
+        position: relative;
+        min-height: 580px;
+        background:
+          radial-gradient(circle at 50% 36%, rgba(168, 155, 255, 0.22), transparent 32%),
+          radial-gradient(circle at 76% 20%, rgba(143, 211, 200, 0.1), transparent 24%),
+          #090a0f;
+      }
+
+      .topbar {
+        position: absolute;
+        inset: 16px 18px auto;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(9, 10, 15, 0.72);
+        backdrop-filter: blur(16px);
+        padding: 8px 12px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .live-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--accent);
+      }
+
+      .character {
+        position: absolute;
+        left: 50%;
+        bottom: 76px;
+        width: min(42vw, 360px);
+        height: 460px;
+        transform: translateX(-50%);
+      }
+
+      .character::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 38px;
+        width: 220px;
+        height: 220px;
+        transform: translateX(-50%);
+        border-radius: 48% 52% 46% 54%;
+        background:
+          radial-gradient(circle at 36% 44%, #1b1631 0 7%, transparent 8%),
+          radial-gradient(circle at 64% 44%, #1b1631 0 7%, transparent 8%),
+          radial-gradient(circle at 50% 54%, #f2a4a1 0 3%, transparent 4%),
+          #f3c4bd;
+        box-shadow:
+          -30px -26px 0 10px #25203b,
+          30px -24px 0 10px #30263e,
+          0 0 0 4px rgba(255, 255, 255, 0.04);
+      }
+
+      .character::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        bottom: 0;
+        width: 290px;
+        height: 230px;
+        transform: translateX(-50%);
+        border-radius: 120px 120px 18px 18px;
+        background: linear-gradient(180deg, #1d2030, #11131a);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .metric-strip {
+        position: absolute;
+        left: 50%;
+        bottom: 112px;
+        transform: translateX(-50%);
+        display: grid;
+        grid-template-columns: repeat(4, minmax(90px, 1fr));
+        gap: 8px;
+        width: min(720px, calc(100% - 48px));
+      }
+
+      .metric {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 9px 10px;
+        background: rgba(9, 10, 15, 0.74);
+        backdrop-filter: blur(16px);
+      }
+
+      .metric b {
+        display: block;
+        margin-top: 3px;
+        font-size: 15px;
+      }
+
+      .metric span {
+        color: var(--soft);
+        font-size: 11px;
+      }
+
+      .metric.good b {
+        color: var(--good);
+      }
+
+      .metric.warn b {
+        color: var(--warn);
+      }
+
+      .controls {
+        position: absolute;
+        left: 50%;
+        bottom: 28px;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .circle {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--line);
+        color: white;
+        font-size: 18px;
+      }
+
+      .circle.end {
+        width: 96px;
+        border-radius: 999px;
+        background: var(--accent);
+        border-color: transparent;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .drawer {
+        border-left: 1px solid var(--line);
+        background: var(--panel);
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .drawer-head,
+      .drawer-section {
+        padding: 16px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .drawer-head h2 {
+        margin: 0 0 4px;
+        font-size: 18px;
+      }
+
+      .kv {
+        display: grid;
+        grid-template-columns: 88px 1fr;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .check {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 9px 0;
+        color: var(--muted);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        font-size: 13px;
+      }
+
+      .check:last-child {
+        border-bottom: 0;
+      }
+
+      .status {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--soft);
+      }
+
+      .status.good {
+        background: var(--good);
+      }
+
+      .status.warn {
+        background: var(--warn);
+      }
+
+      .transcript {
+        padding: 16px;
+        overflow: auto;
+      }
+
+      .bubble {
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-bottom: 10px;
+        background: var(--panel-2);
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .bubble.user {
+        border-left: 3px solid var(--calm);
+      }
+
+      .bubble.ai {
+        border-left: 3px solid var(--violet);
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+        align-items: stretch;
+      }
+
+      .flow-step {
+        min-height: 108px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      .flow-step strong {
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .flow-step p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      th,
+      td {
+        padding: 12px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      th {
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.04);
+        font-size: 13px;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      code {
+        color: var(--calm);
+        background: rgba(143, 211, 200, 0.08);
+        border: 1px solid rgba(143, 211, 200, 0.16);
+        border-radius: 6px;
+        padding: 1px 5px;
+      }
+
+      @media (max-width: 980px) {
+        .grid.two,
+        .grid.three,
+        .flow {
+          grid-template-columns: 1fr;
+        }
+
+        .call {
+          grid-template-columns: 56px minmax(0, 1fr);
+        }
+
+        .drawer {
+          grid-column: 1 / -1;
+          min-height: 360px;
+          border-left: 0;
+          border-top: 1px solid var(--line);
+        }
+
+        .metric-strip {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          bottom: 104px;
+        }
+
+        .character {
+          width: 300px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero shell">
+        <span class="eyebrow"><span class="live-dot"></span> Skill Archive · Pika-style Debate Call</span>
+        <h1>Pika 式音视频辩论陪练主体验</h1>
+        <p class="lead">
+          本规格把当前 WSC AI Avatar 的 `/debate` 页面收敛为一个可落地的通话训练技能：
+          沉浸式 Live2D 视频通话为主，训练数据以轻量启发式指标准实时出现，详细控制与记录进入自适应抽屉。
+        </p>
+        <div class="tag-row">
+          <span class="tag">方案 1：轻量启发式反馈</span>
+          <span class="tag">不增加 LLM 旁路调用</span>
+          <span class="tag">桌面侧栏 / 移动抽屉</span>
+          <span class="tag">面向 WSC Team Debate</span>
+        </div>
+      </section>
+
+      <section class="section shell">
+        <div class="grid two">
+          <article class="card">
+            <h2>产品目标</h2>
+            <p>
+              让学生进入页面后感觉自己正在和一个 AI 辩手视频通话，而不是在操作一个聊天工具。
+              训练反馈必须准实时、低干扰、可行动：提醒学生现在该补结构、证据、时长或 POI 回应。
+            </p>
+          </article>
+          <article class="card">
+            <h2>非目标</h2>
+            <p>
+              本轮不做句段级 AI 评分、不做完整多人 3v3 编排、不做真人摄像头上屏识别。
+              本轮先把现有 Live2D、STT、SSE、TTS 和 IndexedDB 能力组织成稳定主体验。
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section shell">
+        <div class="call" aria-label="Pika-style debate call mockup">
+          <aside class="rail">
+            <div class="avatar-dot"></div>
+            <div class="rail-icon active">⌂</div>
+            <div class="rail-icon">✧</div>
+            <div class="rail-icon">◇</div>
+            <div class="rail-icon">?</div>
+          </aside>
+
+          <section class="stage">
+            <div class="topbar">
+              <div class="pill"><span class="live-dot"></span> LIVE · 02:14</div>
+              <div class="pill">Motion · THBT AI tutors should replace homework</div>
+            </div>
+
+            <div class="character" aria-hidden="true"></div>
+
+            <div class="metric-strip">
+              <div class="metric good">
+                <span>Time</span>
+                <b>2:14 / 4:00</b>
+              </div>
+              <div class="metric good">
+                <span>Structure</span>
+                <b>Signpost found</b>
+              </div>
+              <div class="metric warn">
+                <span>Evidence</span>
+                <b>Needs example</b>
+              </div>
+              <div class="metric">
+                <span>POI</span>
+                <b>Pending</b>
+              </div>
+            </div>
+
+            <div class="controls">
+              <div class="circle">◉</div>
+              <div class="circle end">End Call</div>
+              <div class="circle">▣</div>
+            </div>
+          </section>
+
+          <aside class="drawer">
+            <div class="drawer-head">
+              <h2>Training Drawer</h2>
+              <div class="kv">
+                <span>Role</span><span>User: Proposition</span>
+                <span>Round</span><span>Opening</span>
+                <span>Model</span><span>deepseek / flash</span>
+              </div>
+            </div>
+            <div class="drawer-section">
+              <h3>准实时 Checklist</h3>
+              <div class="check"><span>开头明确 stance</span><span class="status good"></span></div>
+              <div class="check"><span>使用 Firstly / Secondly</span><span class="status good"></span></div>
+              <div class="check"><span>给出具体 example</span><span class="status warn"></span></div>
+              <div class="check"><span>回应上一轮 POI</span><span class="status"></span></div>
+            </div>
+            <div class="transcript">
+              <div class="bubble user">
+                Firstly, AI tutors can personalize learning for each student...
+              </div>
+              <div class="bubble ai">
+                POI: How would you protect students who need human emotional support?
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="section shell">
+        <div class="grid three">
+          <article class="card">
+            <h3>1. 通话画面优先</h3>
+            <p>
+              Live2D 舞台占据主要视觉面积。顶部只保留 call duration、motion、role/round 等短信息。
+              底部是圆形通话控制，贴近 Pika 的视频通话语言。
+            </p>
+          </article>
+          <article class="card">
+            <h3>2. 训练指标轻量化</h3>
+            <p>
+              准实时反馈只使用前端 transcript 启发式规则，不阻塞 AI 回复，不消耗额外 token。
+              指标用小条带呈现，避免像考试成绩一样压迫学生。
+            </p>
+          </article>
+          <article class="card">
+            <h3>3. 控制进入抽屉</h3>
+            <p>
+              Motion picker、side、round、history、provider、transcript 和 POI 放在桌面右侧窄面板；
+              移动端折叠为底部抽屉。
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section shell">
+        <article class="card">
+          <h2>启发式反馈规则</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>指标</th>
+                <th>输入</th>
+                <th>状态规则</th>
+                <th>用户文案</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Time</td>
+                <td>录音开始时间、当前 round</td>
+                <td>Opening/Rebuttal 目标 3:30-4:00；Reply 目标 1:30-2:00。低于 30% 为 quiet，高于 90% 为 wrap up。</td>
+                <td><code>Good pace</code> / <code>Wrap up soon</code></td>
+              </tr>
+              <tr>
+                <td>Structure</td>
+                <td>transcript 文本</td>
+                <td>检测 signpost：firstly, secondly, my first argument, therefore, in conclusion 等。</td>
+                <td><code>Signpost found</code> / <code>Add structure</code></td>
+              </tr>
+              <tr>
+                <td>Evidence</td>
+                <td>transcript 文本</td>
+                <td>检测 example/evidence anchor：for example, study, data, in 2024, according to, case of 等。</td>
+                <td><code>Needs example</code> / <code>Evidence present</code></td>
+              </tr>
+              <tr>
+                <td>POI</td>
+                <td>上一轮 AI POI、用户 transcript</td>
+                <td>如果存在 pending POI，检测用户前 45 秒是否出现 because/however/therefore 或 POI 关键词重合。</td>
+                <td><code>Address POI</code> / <code>POI answered</code></td>
+              </tr>
+              <tr>
+                <td>Clarity</td>
+                <td>词数、句长</td>
+                <td>平均句长超过 28 词提示拆句；连续 filler 词超过阈值提示 slow down。</td>
+                <td><code>Shorten sentences</code> / <code>Clear delivery</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </article>
+      </section>
+
+      <section class="section shell">
+        <h2>数据流</h2>
+        <div class="flow">
+          <div class="flow-step">
+            <strong>1. Mic / Text</strong>
+            <p>用户说话或输入。Web Speech API 逐步更新 interim/final transcript。</p>
+          </div>
+          <div class="flow-step">
+            <strong>2. Heuristic Engine</strong>
+            <p>前端根据 transcript、round、POI 和计时器计算 training signals。</p>
+          </div>
+          <div class="flow-step">
+            <strong>3. Call Overlay</strong>
+            <p>Time / Structure / Evidence / POI 以低干扰条带显示在通话画面底部。</p>
+          </div>
+          <div class="flow-step">
+            <strong>4. LLM Turn</strong>
+            <p>用户提交后，现有 SSE 调用生成 AI 对手回应，TTS 按句播放。</p>
+          </div>
+          <div class="flow-step">
+            <strong>5. Session Store</strong>
+            <p>messages、motion、round、feedback snapshots 写入 IndexedDB，供历史复盘。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section shell">
+        <div class="grid two">
+          <article class="card">
+            <h2>组件边界</h2>
+            <ul>
+              <li><code>VideoCallScene</code> 负责 Pika 式通话 chrome、指标条、折叠入口。</li>
+              <li><code>TrainingDrawer</code> 负责 motion、role、round、history、transcript、POI。</li>
+              <li><code>useTrainingSignals</code> 负责启发式计算，纯函数优先，便于 Vitest 覆盖。</li>
+              <li><code>TrainingMetricStrip</code> 只渲染指标，不知道 LLM 或 TTS。</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h2>验收标准</h2>
+            <ul>
+              <li>桌面默认展示视频通话 + 右侧训练抽屉；可一键折叠为纯通话。</li>
+              <li>移动端默认通话，训练数据通过底部抽屉访问。</li>
+              <li>用户录音或输入时，Time / Structure / Evidence / POI 在 300ms 内更新。</li>
+              <li>无额外 LLM 评估调用；现有 `/api/chat`、TTS、history 流程保持可用。</li>
+              <li>核心启发式规则有单元测试，页面通过 typecheck。</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="section shell">
+        <article class="card">
+          <h2>Skill Archive 记录</h2>
+          <p>
+            技能名：<code>Pika-style Debate Call Coach</code>。触发场景：学生进入 AI 对手陪练，
+            需要在视频通话中完成一轮 WSC 发言并获得准实时训练提示。
+          </p>
+          <p>
+            技能输入：motion、userSide、round、current transcript、last AI POI、elapsed time。
+            技能输出：metric strip、checklist 状态、drawer transcript、下一步训练提示。
+          </p>
+          <p>
+            版本边界：v0.1 只使用轻量启发式，不声明真实评分能力；完整 Style/Content/Strategy 评分仍由评委复盘模块承担。
+          </p>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
