@@ -19,10 +19,10 @@ export function ChatMessages({
         <div
           key={i}
           className={cn(
-            'max-w-[85%] rounded-2xl px-4 py-2 text-sm leading-relaxed',
+            'rounded-xl px-4 py-3 text-sm leading-relaxed shadow-[0_10px_28px_rgba(0,0,0,0.16)]',
             m.role === 'user'
-              ? 'self-end bg-wsc-calm/20 text-white'
-              : 'self-start bg-white/5 text-white/90'
+              ? 'max-w-[82%] self-end bg-wsc-calm/22 text-white'
+              : 'w-full self-start bg-white/[0.055] text-white/92'
           )}
         >
           <div className="mb-1 text-[10px] uppercase tracking-wider text-white/40">
@@ -32,7 +32,7 @@ export function ChatMessages({
         </div>
       ))}
       {streaming && (
-        <div className="self-start max-w-[85%] rounded-2xl bg-white/5 px-4 py-2 text-sm leading-relaxed text-white/90">
+        <div className="w-full self-start rounded-xl bg-white/[0.055] px-4 py-3 text-sm leading-relaxed text-white/92 shadow-[0_10px_28px_rgba(0,0,0,0.16)]">
           <div className="mb-1 text-[10px] uppercase tracking-wider text-wsc-calm/80">
             AI Debater · streaming
           </div>
@@ -43,7 +43,7 @@ export function ChatMessages({
         </div>
       )}
       {poi && (
-        <div className="self-start max-w-[85%] rounded-2xl border border-wsc-gold/40 bg-wsc-gold/10 px-4 py-2 text-sm text-wsc-gold">
+        <div className="w-full self-start rounded-xl border border-wsc-gold/45 bg-wsc-gold/12 px-4 py-3 text-sm leading-relaxed text-wsc-gold shadow-[0_12px_30px_rgba(0,0,0,0.18)]">
           <div className="mb-1 text-[10px] uppercase tracking-wider text-wsc-gold/70">
             Point of Information
           </div>

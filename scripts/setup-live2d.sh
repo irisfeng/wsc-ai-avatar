@@ -93,7 +93,7 @@ done
 HARU_REPO="$SAMPLES_BASE/Haru"
 HARU_DIR="$MODELS_DIR/Haru/runtime"
 echo "→ Downloading Haru sample model (mature female, 8 expressions)…"
-mkdir -p "$HARU_DIR/Haru.2048" "$HARU_DIR/expressions" "$HARU_DIR/motions"
+mkdir -p "$HARU_DIR/Haru.2048" "$HARU_DIR/expressions" "$HARU_DIR/motions" "$HARU_DIR/sounds"
 for FILE in Haru.model3.json Haru.moc3 Haru.physics3.json \
             Haru.pose3.json Haru.cdi3.json Haru.userdata3.json; do
   echo "    $FILE"
@@ -108,11 +108,17 @@ for I in 01 02 03 04 05 06 07 08; do
   curl -fsSL "$HARU_REPO/expressions/F${I}.exp3.json" \
     -o "$HARU_DIR/expressions/F${I}.exp3.json"
 done
-# Idle + 4 representative motions (1, 4, 10, 16) — fewer files, still varied
-for MN in haru_g_idle haru_g_m01 haru_g_m04 haru_g_m10 haru_g_m16; do
+# Motions referenced by Haru.model3.json, plus representative extras for future use.
+for MN in haru_g_idle haru_g_m15 haru_g_m26 haru_g_m06 haru_g_m20 haru_g_m09 \
+          haru_g_m01 haru_g_m04 haru_g_m10 haru_g_m16; do
   echo "    motions/${MN}.motion3.json"
   curl -fsSL "$HARU_REPO/motions/${MN}.motion3.json" \
     -o "$HARU_DIR/motions/${MN}.motion3.json"
+done
+for WAV in haru_talk_13 haru_Info_14 haru_normal_6 haru_Info_04; do
+  echo "    sounds/${WAV}.wav"
+  curl -fsSL "$HARU_REPO/sounds/${WAV}.wav" \
+    -o "$HARU_DIR/sounds/${WAV}.wav"
 done
 
 echo "✓ Live2D assets installed under $TARGET"

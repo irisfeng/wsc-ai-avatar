@@ -101,7 +101,7 @@ export function TrainingDrawer({
         </div>
       </header>
 
-      <div className="space-y-3 border-b border-white/10 p-4">
+      <div className="space-y-3 border-b border-white/10 p-3">
         <MotionPicker value={motion} onChange={onMotionChange} />
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <DrawerToggle
@@ -124,88 +124,28 @@ export function TrainingDrawer({
         </div>
       </div>
 
-      <section className="border-b border-white/10 p-4">
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/45">
-          Checklist
-        </h3>
-        <div className="space-y-1">
-          {checklist.map((item) => (
-            <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg bg-white/[0.035] px-3 py-2">
-              <div className="min-w-0">
-                <div className="truncate text-xs text-white/85">{item.label}</div>
-                <div className="truncate text-[10px] text-white/40">{item.detail}</div>
-              </div>
-              <span
-                className={cn(
-                  'h-2.5 w-2.5 shrink-0 rounded-full',
-                  item.state === 'good' && 'bg-emerald-300',
-                  item.state === 'warn' && 'bg-amber-300',
-                  item.state === 'neutral' && 'bg-white/25'
-                )}
-              />
-            </div>
-          ))}
-        </div>
-        {nextDrill && (
-          <div className="mt-3 rounded-lg border border-wsc-calm/20 bg-wsc-calm/10 px-3 py-2">
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-wsc-calm/80">
-              Next drill
-            </div>
-            <div className="mt-1 text-xs font-semibold text-white/90">{nextDrill.title}</div>
-            <div className="mt-0.5 text-[11px] leading-snug text-white/55">
-              {nextDrill.detail}
-            </div>
-            <div className="mt-1 text-[10px] leading-snug text-white/35">
-              {nextDrill.reason}
-            </div>
-          </div>
-        )}
-      </section>
-
       {showHistory && (
         <div className="border-b border-white/10 bg-white/[0.02] py-2">
           <HistoryPanel kind="debate" refreshKey={historyKey} onRestore={onRestoreSession} />
         </div>
       )}
 
-      <section className="border-b border-white/10 p-4">
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/45">
-          Skills
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {listDebateSkills().map((skill) => (
-            <button
-              key={skill.id}
-              type="button"
-              onClick={() => setSelectedSkillId(skill.id)}
-              className={
-                selectedSkillId === skill.id
-                  ? 'rounded-full bg-white/85 px-3 py-1 text-xs text-wsc-ink'
-                  : 'rounded-full bg-white/5 px-3 py-1 text-xs text-white/65 hover:bg-white/10'
-              }
-            >
-              {skill.shortTitle}
-            </button>
-          ))}
-        </div>
-        <div className="mt-3 rounded-lg bg-white/[0.035] px-3 py-2">
-          <div className="flex items-center justify-between gap-2">
-            <div className="truncate text-xs font-semibold text-white/90">
-              {selectedSkill.title}
+      <section className="min-h-[320px] flex-1 overflow-y-auto border-b border-white/10 p-4">
+        <div className="sticky -top-4 z-10 -mx-4 mb-3 border-b border-white/10 bg-wsc-ink/96 px-4 py-3 backdrop-blur-xl">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-white/50">
+                Transcript
+              </h3>
+              <p className="mt-0.5 text-[11px] text-white/35">完整对话与 POI 复盘</p>
             </div>
-            <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/45">
-              {selectedSkill.runMode}
+            <span className="rounded-full bg-white/5 px-2.5 py-1 text-[10px] text-white/45">
+              {messages.length} msgs
             </span>
           </div>
-          <p className="mt-1 text-[11px] leading-snug text-white/50">
-            {selectedSkill.description}
-          </p>
         </div>
-      </section>
-
-      <section className="min-h-0 flex-1 overflow-y-auto p-4">
         {messages.length === 0 && !streaming ? (
-          <p className="text-sm text-white/40">
+          <p className="rounded-xl border border-dashed border-white/10 bg-white/[0.025] px-4 py-5 text-sm leading-relaxed text-white/42">
             点击麦克风或输入第一段发言。AI 数字人将以对方辩手身份回应。
           </p>
         ) : (
@@ -216,6 +156,78 @@ export function TrainingDrawer({
         {provider && (
           <p className="mt-3 font-mono text-[10px] text-white/30">powered by {provider}</p>
         )}
+      </section>
+
+      <section className="shrink-0 border-b border-white/10 p-3">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-white/45">
+            Coach
+          </h3>
+          <span className="text-[10px] text-white/35">live checklist</span>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {checklist.map((item) => (
+            <div key={item.id} className="flex min-w-0 items-center justify-between gap-2 rounded-lg bg-white/[0.035] px-2.5 py-2">
+              <div className="min-w-0">
+                <div className="truncate text-[11px] text-white/85">{item.label}</div>
+                <div className="truncate text-[10px] text-white/38">{item.detail}</div>
+              </div>
+              <span
+                className={cn(
+                  'h-2 w-2 shrink-0 rounded-full',
+                  item.state === 'good' && 'bg-emerald-300',
+                  item.state === 'warn' && 'bg-amber-300',
+                  item.state === 'neutral' && 'bg-white/25'
+                )}
+              />
+            </div>
+          ))}
+        </div>
+        {nextDrill && (
+          <div className="mt-2 rounded-lg border border-wsc-calm/20 bg-wsc-calm/10 px-3 py-2">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-wsc-calm/80">
+              Next drill
+            </div>
+            <div className="mt-0.5 truncate text-xs font-semibold text-white/90">
+              {nextDrill.title}
+            </div>
+            <div className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-white/55">
+              {nextDrill.detail}
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section className="shrink-0 p-3">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {listDebateSkills().map((skill) => (
+            <button
+              key={skill.id}
+              type="button"
+              onClick={() => setSelectedSkillId(skill.id)}
+              className={
+                selectedSkillId === skill.id
+                  ? 'shrink-0 rounded-full bg-white/85 px-3 py-1 text-xs text-wsc-ink'
+                  : 'shrink-0 rounded-full bg-white/5 px-3 py-1 text-xs text-white/65 hover:bg-white/10'
+              }
+            >
+              {skill.shortTitle}
+            </button>
+          ))}
+        </div>
+        <div className="mt-2 rounded-lg bg-white/[0.032] px-3 py-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="truncate text-xs font-semibold text-white/90">
+              {selectedSkill.title}
+            </div>
+            <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/45">
+              {selectedSkill.runMode}
+            </span>
+          </div>
+          <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-white/50">
+            {selectedSkill.description}
+          </p>
+        </div>
       </section>
     </aside>
   );

@@ -105,3 +105,30 @@ Observed result:
 - TypeScript check passed.
 - Vitest passed: 15 test files, 133 tests.
 - Current-stage verifier passed.
+
+## 2026-05-23 — Current Route Maturity Test Hardening
+
+Scope:
+
+- Added avatar registry regression coverage for Live2D model paths, referenced textures, motions, sounds, expressions, voice ids, and layout hints.
+- Fixed Haru asset completeness by adding missing referenced motions and sounds.
+- Updated `scripts/setup-live2d.sh` so future Live2D installs fetch Haru's referenced runtime assets.
+- Added a visual maturity test board for the current Live2D + half-duplex voice route.
+
+Reference:
+
+`docs/superpowers/specs/2026-05-23-current-route-maturity-test.html`
+
+Verification run:
+
+```bash
+npm run typecheck
+npm test
+npm run verify:current
+```
+
+Observed result:
+
+- TypeScript check passed.
+- Vitest passed: 16 test files, 137 tests.
+- Current-stage verifier passed, including `/debate` HTTP 200 and `en-US-AnaNeural` TTS smoke.
