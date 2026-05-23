@@ -30,6 +30,7 @@ interface Props {
   micDisabled?: boolean;
   onMicClick?: () => void;
   onEndCall?: () => void;
+  trainingSlot?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 }
@@ -44,6 +45,7 @@ export function VideoCallScene({
   micDisabled = false,
   onMicClick,
   onEndCall,
+  trainingSlot,
   children,
   className
 }: Props) {
@@ -146,7 +148,7 @@ export function VideoCallScene({
               When AI is speaking we show the last sentence as a
               live subtitle — Pika's signature element. */}
       {caption && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-28 z-40 flex justify-center px-6">
+        <div className="pointer-events-none absolute inset-x-0 bottom-44 z-40 flex justify-center px-6">
           <div
             className="max-w-2xl rounded-xl border border-white/[0.08] px-4 py-2 text-center text-sm leading-snug text-white/95 backdrop-blur-md"
             style={{
@@ -156,6 +158,12 @@ export function VideoCallScene({
           >
             {caption}
           </div>
+        </div>
+      )}
+
+      {trainingSlot && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-24 z-40 flex justify-center">
+          <div className="pointer-events-auto w-full">{trainingSlot}</div>
         </div>
       )}
 
