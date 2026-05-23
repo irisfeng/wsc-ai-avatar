@@ -55,6 +55,7 @@ const SMOOTHING_ALPHA = 0.55;
 export function useAudioMouth() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const primedRef = useRef(false);
+  const stopCurrentRef = useRef<(() => void) | null>(null);
 
   function getCtx(): AudioContext {
     if (!audioCtxRef.current) {
@@ -101,22 +102,31 @@ export function useAudioMouth() {
 
     const url = URL.createObjectURL(audioBlob);
     try {
-      await playWithViseme(url, getCtx(), model);
+      await playWithViseme(url, getCtx(), model, (stopFn) => {
+        stopCurrentRef.current = stopFn;
+      });
     } finally {
       URL.revokeObjectURL(url);
+      stopCurrentRef.current = null;
       if (model && previousLipSync !== undefined) {
         model.lipSync = previousLipSync;
       }
     }
   }
 
-  return { play, prime };
+  function stop(): void {
+    stopCurrentRef.current?.();
+    stopCurrentRef.current = null;
+  }
+
+  return { play, prime, stop };
 }
 
 async function playWithViseme(
   url: string,
   ctx: AudioContext,
-  model: Live2DRef | undefined
+  model: Live2DRef | undefined,
+  onStopReady: (stopFn: (() => void) | null) => void
 ): Promise<void> {
   if (ctx.state === 'suspended') await ctx.resume();
 
@@ -202,11 +212,34 @@ async function playWithViseme(
 
   try {
     await new Promise<void>((resolve, reject) => {
-      audio.onended = () => resolve();
-      audio.onerror = () => reject(new Error('audio playback failed'));
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+      const fail = (err: Error) => {
+        if (settled) return;
+        settled = true;
+        reject(err);
+      };
+
+      onStopReady(() => {
+        try {
+          audio.pause();
+          audio.currentTime = 0;
+        } catch {
+          /* noop */
+        }
+        finish();
+      });
+
+      audio.onended = finish;
+      audio.onerror = () => fail(new Error('audio playback failed'));
       audio.play().catch(reject);
     });
   } finally {
+    onStopReady(null);
     if (rafId !== null) cancelAnimationFrame(rafId);
     internalModel?.off?.('beforeModelUpdate', onBeforeModelUpdate);
 

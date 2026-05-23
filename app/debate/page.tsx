@@ -77,7 +77,7 @@ export default function DebatePage() {
   const sentenceCursorRef = useRef(0);
 
   const mic = useMic('en-US');
-  const { play, prime } = useAudioMouth();
+  const { play, prime, stop: stopAudio } = useAudioMouth();
 
   // Persist session whenever messages change (debounced via effect).
   useEffect(() => {
@@ -147,6 +147,7 @@ export default function DebatePage() {
     // Abort any in-flight stream / TTS from a previous turn.
     abortRef.current?.abort();
     ttsQueueRef.current?.abort();
+    stopAudio();
     const ctl = new AbortController();
     abortRef.current = ctl;
     const ttsQueue = new SentenceTtsQueue({ voice: avatar.voice });
@@ -218,6 +219,13 @@ export default function DebatePage() {
   function stopStreaming() {
     abortRef.current?.abort();
     ttsQueueRef.current?.abort();
+    stopAudio();
+    setBusy(false);
+  }
+
+  function endCall() {
+    if (mic.listening) mic.stop();
+    stopStreaming();
   }
 
   function toggleMic() {
@@ -243,6 +251,10 @@ export default function DebatePage() {
           speaking={busy}
           caption={liveCaption(streaming, messages)}
           className="absolute inset-0"
+          micActive={mic.listening}
+          micDisabled={!mic.supported || busy}
+          onMicClick={toggleMic}
+          onEndCall={endCall}
           topRightSlot={
             <AvatarPicker
               value={avatarId}
@@ -348,7 +360,7 @@ export default function DebatePage() {
           {error && <p className="mt-3 text-xs text-wsc-accent">{error}</p>}
           {mic.listening && (
             <p className="mt-3 text-xs text-wsc-calm">
-              录音中… {mic.interim || '(开始说话)'}
+              录音中… {mic.transcript || '(开始说话)'}
             </p>
           )}
           {provider && (
