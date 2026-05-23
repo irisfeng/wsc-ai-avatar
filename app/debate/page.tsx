@@ -72,7 +72,7 @@ export default function DebatePage() {
   const [showHistory, setShowHistory] = useState(false);
   const [historyKey, setHistoryKey] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(true);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [turnStartedAt, setTurnStartedAt] = useState<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -297,14 +297,16 @@ export default function DebatePage() {
           onEndCall={endCall}
           trainingSlot={<TrainingMetricStrip signals={visibleMetrics} />}
           topRightSlot={
-            <AvatarPicker
-              value={avatarId}
-              onChange={setAvatarId}
-              // Lock the picker while the AI is generating + speaking —
-              // mid-turn swaps destroy the Pixi WebGL context and kill
-              // the in-flight sentence-level TTS queue.
-              disabled={busy}
-            />
+            <div className="hidden md:block">
+              <AvatarPicker
+                value={avatarId}
+                onChange={setAvatarId}
+                // Lock the picker while the AI is generating + speaking —
+                // mid-turn swaps destroy the Pixi WebGL context and kill
+                // the in-flight sentence-level TTS queue.
+                disabled={busy}
+              />
+            </div>
           }
         >
           <Live2DStage
@@ -339,7 +341,7 @@ export default function DebatePage() {
           <PanelRightOpen className="h-3.5 w-3.5" /> Training
         </button>
 
-        <div className="absolute inset-x-4 bottom-4 z-50 mx-auto max-w-3xl rounded-xl border border-white/10 bg-black/55 p-3 backdrop-blur-md">
+        <div className="absolute inset-x-4 bottom-20 z-50 mx-auto max-w-3xl rounded-xl border border-white/10 bg-black/55 p-3 backdrop-blur-md">
           <textarea
             className="input min-h-[54px] resize-none"
             placeholder="输入你的发言（英文）或使用麦克风..."
@@ -384,7 +386,7 @@ export default function DebatePage() {
 
       <div className="hidden min-h-0 md:block">
         <TrainingDrawer
-          open={drawerOpen}
+          open
           mobile={false}
           motion={motion}
           onMotionChange={setMotion}
