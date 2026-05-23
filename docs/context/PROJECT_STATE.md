@@ -20,6 +20,7 @@ The primary experience is `/debate`:
 - Training side panel on desktop and mobile drawer on narrow screens.
 - Debate and judge sessions stored locally in IndexedDB.
 - Local learner profile memory stores preferred avatar, practiced motions, recurring weak signals, and next recommended drill.
+- Declarative debate skill registry exposes opening coaching, POI drill, evidence finder, judge replay, and style coaching.
 
 ## Explicit Boundary
 
@@ -31,11 +32,10 @@ It is not yet a true realtime duplex audio system. WebRTC, OpenAI Realtime API, 
 
 ## Current Priorities
 
-1. Skill registry for reusable debate training workflows.
-2. Training panel as an artifact/review surface.
-3. Voice steering and barge-in behavior.
-4. Practice-loop automation.
-5. Realtime audio proof of concept.
+1. Training panel as an artifact/review surface.
+2. Voice steering and barge-in behavior.
+3. Practice-loop automation.
+4. Realtime audio proof of concept.
 
 ## Known Risks
 

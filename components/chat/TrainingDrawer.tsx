@@ -1,10 +1,12 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { History, Plus, X } from 'lucide-react';
 import type { ChatMessage } from '@/lib/llm';
 import type { DebateSide } from '@/lib/prompts';
 import type { TrainingSignal } from '@/lib/trainingSignals';
 import type { NextDrill } from '@/lib/learnerProfile';
+import { getDebateSkill, listDebateSkills, type DebateSkillId } from '@/lib/skills';
 import { cn } from '@/lib/utils';
 import { ChatMessages } from '@/components/chat/ChatMessages';
 import { HistoryPanel } from '@/components/chat/HistoryPanel';
@@ -60,6 +62,14 @@ export function TrainingDrawer({
   onNewSession,
   onClose
 }: Props) {
+  const [selectedSkillId, setSelectedSkillId] = useState<DebateSkillId>(
+    nextDrill?.skillId ?? 'opening-coach'
+  );
+  const selectedSkill = getDebateSkill(selectedSkillId);
+  useEffect(() => {
+    if (nextDrill?.skillId) setSelectedSkillId(nextDrill.skillId);
+  }, [nextDrill?.skillId]);
+
   return (
     <aside
       className={cn(
@@ -157,6 +167,41 @@ export function TrainingDrawer({
           <HistoryPanel kind="debate" refreshKey={historyKey} onRestore={onRestoreSession} />
         </div>
       )}
+
+      <section className="border-b border-white/10 p-4">
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/45">
+          Skills
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          {listDebateSkills().map((skill) => (
+            <button
+              key={skill.id}
+              type="button"
+              onClick={() => setSelectedSkillId(skill.id)}
+              className={
+                selectedSkillId === skill.id
+                  ? 'rounded-full bg-white/85 px-3 py-1 text-xs text-wsc-ink'
+                  : 'rounded-full bg-white/5 px-3 py-1 text-xs text-white/65 hover:bg-white/10'
+              }
+            >
+              {skill.shortTitle}
+            </button>
+          ))}
+        </div>
+        <div className="mt-3 rounded-lg bg-white/[0.035] px-3 py-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="truncate text-xs font-semibold text-white/90">
+              {selectedSkill.title}
+            </div>
+            <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/45">
+              {selectedSkill.runMode}
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] leading-snug text-white/50">
+            {selectedSkill.description}
+          </p>
+        </div>
+      </section>
 
       <section className="min-h-0 flex-1 overflow-y-auto p-4">
         {messages.length === 0 && !streaming ? (

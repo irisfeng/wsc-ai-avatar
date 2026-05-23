@@ -83,3 +83,25 @@ Observed result:
 - TypeScript check passed.
 - Vitest passed: 14 test files, 130 tests.
 - Current-stage verifier passed, including `/debate` HTTP 200 and `en-US-AnaNeural` TTS smoke.
+
+## 2026-05-23 — Debate Skill Registry
+
+Scope:
+
+- Added declarative debate skill registry.
+- Added initial skills: Opening Coach, POI Drill, Evidence Finder, Judge Replay, and Style Coach.
+- Rendered selectable skills in the Training panel without changing the core call flow.
+
+Verification run:
+
+```bash
+npm run typecheck
+npm test
+npm run verify:current
+```
+
+Observed result:
+
+- TypeScript check passed.
+- Vitest passed: 15 test files, 133 tests.
+- Current-stage verifier passed.

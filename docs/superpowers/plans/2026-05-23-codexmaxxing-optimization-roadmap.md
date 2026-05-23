@@ -78,9 +78,9 @@ Update `docs/context/QA_LOG.md` with the command and expected pass/fail signals.
 - Modify: `components/chat/TrainingDrawer.tsx`
 - Optional create: `components/chat/SkillPanel.tsx`
 
-- [ ] Add initial skills: `opening-coach`, `poi-drill`, `evidence-finder`, `judge-replay`, `style-coach`.
-- [ ] Render selectable skills without changing the core call flow.
-- [ ] Keep each skill declarative until a specific skill needs runtime execution.
+- [x] Add initial skills: `opening-coach`, `poi-drill`, `evidence-finder`, `judge-replay`, `style-coach`.
+- [x] Render selectable skills without changing the core call flow.
+- [x] Keep each skill declarative until a specific skill needs runtime execution.
 
 ## Task 5: Artifact Review Surface
 
