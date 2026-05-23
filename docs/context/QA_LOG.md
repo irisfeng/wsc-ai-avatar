@@ -60,3 +60,26 @@ Expected checks:
 - `/api/tts` returns audio bytes for `en-US-AnaNeural`.
 
 This verifier intentionally does not call the LLM provider. Use `npm run smoke` when a deeper provider-backed check is needed.
+
+## 2026-05-23 — Learner Profile Memory
+
+Scope:
+
+- Added local learner profile model.
+- Added IndexedDB `learnerProfiles` store.
+- Connected `/debate` completed turns to profile updates.
+- Training panel now shows a next recommended drill when enough practice data exists.
+
+Verification run:
+
+```bash
+npm run typecheck
+npm test
+npm run verify:current
+```
+
+Observed result:
+
+- TypeScript check passed.
+- Vitest passed: 14 test files, 130 tests.
+- Current-stage verifier passed, including `/debate` HTTP 200 and `en-US-AnaNeural` TTS smoke.

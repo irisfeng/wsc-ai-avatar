@@ -25,8 +25,14 @@ import { TrainingDrawer } from '@/components/chat/TrainingDrawer';
 import { TrainingMetricStrip } from '@/components/chat/TrainingMetricStrip';
 import { computeTrainingSignals } from '@/lib/trainingSignals';
 import {
+  updateLearnerProfileFromPractice,
+  type LearnerProfile
+} from '@/lib/learnerProfile';
+import {
+  getLearnerProfile,
   startDebateSession,
   updateDebateSession,
+  updateLearnerProfile,
   type DebateSession,
   type Session
 } from '@/lib/storage';
@@ -75,12 +81,19 @@ export default function DebatePage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [turnStartedAt, setTurnStartedAt] = useState<number | null>(null);
+  const [learnerProfile, setLearnerProfile] = useState<LearnerProfile | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const ttsQueueRef = useRef<SentenceTtsQueue | null>(null);
   const sentenceCursorRef = useRef(0);
 
   const mic = useMic('en-US');
   const { play, prime, stop: stopAudio } = useAudioMouth();
+
+  useEffect(() => {
+    getLearnerProfile()
+      .then(setLearnerProfile)
+      .catch(() => undefined);
+  }, []);
 
   // Persist session whenever messages change (debounced via effect).
   useEffect(() => {
@@ -250,6 +263,27 @@ export default function DebatePage() {
 
     // Keep input disabled until she finishes speaking the whole turn.
     await ttsQueue.drain();
+    const practiceSignals = computeTrainingSignals({
+      transcript: userMsg.content,
+      elapsedSeconds,
+      round,
+      pendingPoi: undefined
+    });
+    updateLearnerProfile((profile) =>
+      updateLearnerProfileFromPractice(profile, {
+        avatarId,
+        motion,
+        signals: [
+          practiceSignals.time,
+          practiceSignals.structure,
+          practiceSignals.evidence,
+          practiceSignals.poi,
+          practiceSignals.clarity
+        ]
+      })
+    )
+      .then(setLearnerProfile)
+      .catch(() => undefined);
     setBusy(false);
   }
 
@@ -389,6 +423,7 @@ export default function DebatePage() {
           round={round}
           onRoundChange={setRound}
           checklist={trainingSignals.checklist}
+          nextDrill={learnerProfile?.nextDrill}
           messages={messages}
           poi={poi}
           streaming={streaming}
@@ -415,6 +450,7 @@ export default function DebatePage() {
           round={round}
           onRoundChange={setRound}
           checklist={trainingSignals.checklist}
+          nextDrill={learnerProfile?.nextDrill}
           messages={messages}
           poi={poi}
           streaming={streaming}

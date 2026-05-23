@@ -65,9 +65,9 @@ Update `docs/context/QA_LOG.md` with the command and expected pass/fail signals.
 - Modify: `app/debate/page.tsx`
 - Modify: `components/chat/TrainingDrawer.tsx`
 
-- [ ] Store avatar preference, recurring weak signals, last practiced motion tags, and suggested next drill.
-- [ ] Show the next recommended drill in the Training panel.
-- [ ] Keep all data local-first.
+- [x] Store avatar preference, recurring weak signals, last practiced motion tags, and suggested next drill.
+- [x] Show the next recommended drill in the Training panel.
+- [x] Keep all data local-first.
 
 ## Task 4: Skill Registry
 

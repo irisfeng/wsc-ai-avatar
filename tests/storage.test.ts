@@ -4,12 +4,19 @@ import {
   startDebateSession,
   updateDebateSession,
   saveJudgeRun,
+  getLearnerProfile,
+  saveLearnerProfile,
+  updateLearnerProfile as updateStoredLearnerProfile,
   getSession,
   listSessions,
   deleteSession,
   clearAll,
   _resetForTests
 } from '@/lib/storage';
+import {
+  createDefaultLearnerProfile,
+  updateLearnerProfileFromPractice
+} from '@/lib/learnerProfile';
 
 beforeEach(async () => {
   // Close any open handle, then nuke the database file.
@@ -128,5 +135,65 @@ describe('storage — judge runs', () => {
     const all = await listSessions();
     expect(all).toHaveLength(2);
     expect(new Set(all.map((s) => s.kind))).toEqual(new Set(['debate', 'judge']));
+  });
+});
+
+describe('storage — learner profile', () => {
+  it('getLearnerProfile returns a default profile before one is saved', async () => {
+    const profile = await getLearnerProfile();
+    expect(profile.id).toBe('default');
+    expect(profile.practicedMotions).toEqual([]);
+    expect(profile.weakSignals).toEqual({});
+  });
+
+  it('saveLearnerProfile persists a profile', async () => {
+    const profile = {
+      ...createDefaultLearnerProfile(1000),
+      preferredAvatarId: 'mao' as const
+    };
+    await saveLearnerProfile(profile);
+
+    const stored = await getLearnerProfile();
+    expect(stored.preferredAvatarId).toBe('mao');
+    expect(stored.createdAt).toBe(1000);
+  });
+
+  it('updateLearnerProfile reads, mutates, and saves the profile', async () => {
+    const updated = await updateStoredLearnerProfile((profile) =>
+      updateLearnerProfileFromPractice(profile, {
+        avatarId: 'mao',
+        motion: 'THBT journeys matter.',
+        signals: [
+          {
+            id: 'evidence',
+            title: 'Evidence',
+            label: 'Needs example',
+            detail: 'Add a concrete case',
+            state: 'warn'
+          }
+        ],
+        now: 2000
+      })
+    );
+
+    expect(updated.preferredAvatarId).toBe('mao');
+    expect(updated.weakSignals.evidence?.count).toBe(1);
+    expect(updated.nextDrill?.skillId).toBe('evidence-finder');
+
+    const stored = await getLearnerProfile();
+    expect(stored.weakSignals.evidence?.count).toBe(1);
+  });
+
+  it('clearAll wipes sessions and learner profiles', async () => {
+    await startDebateSession({ motion: 'D', userSide: 'proposition', round: 'opening' });
+    await saveLearnerProfile({
+      ...createDefaultLearnerProfile(1000),
+      preferredAvatarId: 'mao'
+    });
+
+    await clearAll();
+
+    expect(await listSessions()).toEqual([]);
+    expect((await getLearnerProfile()).preferredAvatarId).toBeUndefined();
   });
 });

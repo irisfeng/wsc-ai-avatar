@@ -12,9 +12,14 @@ import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { ChatMessage } from '@/lib/llm';
 import type { DebateSide } from '@/lib/prompts';
 import type { RubricResult } from '@/lib/rubric';
+import {
+  createDefaultLearnerProfile,
+  DEFAULT_LEARNER_PROFILE_ID,
+  type LearnerProfile
+} from '@/lib/learnerProfile';
 
 const DB_NAME = 'wsc-avatar';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export interface DebateSession {
   id: string;
@@ -50,6 +55,10 @@ interface WSCSchema extends DBSchema {
       'by-kind': string;
     };
   };
+  learnerProfiles: {
+    key: string;
+    value: LearnerProfile;
+  };
 }
 
 let dbPromise: Promise<IDBPDatabase<WSCSchema>> | null = null;
@@ -61,9 +70,14 @@ function getDB(): Promise<IDBPDatabase<WSCSchema>> {
   if (!dbPromise) {
     dbPromise = openDB<WSCSchema>(DB_NAME, DB_VERSION, {
       upgrade(db) {
-        const store = db.createObjectStore('sessions', { keyPath: 'id' });
-        store.createIndex('by-updated', 'updatedAt' as never);
-        store.createIndex('by-kind', 'kind');
+        if (!db.objectStoreNames.contains('sessions')) {
+          const store = db.createObjectStore('sessions', { keyPath: 'id' });
+          store.createIndex('by-updated', 'updatedAt' as never);
+          store.createIndex('by-kind', 'kind');
+        }
+        if (!db.objectStoreNames.contains('learnerProfiles')) {
+          db.createObjectStore('learnerProfiles', { keyPath: 'id' });
+        }
       }
     });
   }
@@ -145,6 +159,31 @@ export async function saveJudgeRun(
   return j;
 }
 
+// ─── learner profile ───────────────────────────────────────────────
+
+export async function getLearnerProfile(
+  profileId = DEFAULT_LEARNER_PROFILE_ID
+): Promise<LearnerProfile> {
+  const db = await getDB();
+  const existing = await db.get('learnerProfiles', profileId);
+  return existing ?? createDefaultLearnerProfile();
+}
+
+export async function saveLearnerProfile(profile: LearnerProfile): Promise<void> {
+  const db = await getDB();
+  await db.put('learnerProfiles', profile);
+}
+
+export async function updateLearnerProfile(
+  updater: (profile: LearnerProfile) => LearnerProfile | Promise<LearnerProfile>,
+  profileId = DEFAULT_LEARNER_PROFILE_ID
+): Promise<LearnerProfile> {
+  const existing = await getLearnerProfile(profileId);
+  const updated = await updater(existing);
+  await saveLearnerProfile(updated);
+  return updated;
+}
+
 // ─── generic ──────────────────────────────────────────────────────
 
 export async function getSession(sessionId: string): Promise<Session | null> {
@@ -176,4 +215,5 @@ export async function deleteSession(sessionId: string): Promise<void> {
 export async function clearAll(): Promise<void> {
   const db = await getDB();
   await db.clear('sessions');
+  await db.clear('learnerProfiles');
 }

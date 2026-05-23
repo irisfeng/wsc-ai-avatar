@@ -4,6 +4,7 @@ import { History, Plus, X } from 'lucide-react';
 import type { ChatMessage } from '@/lib/llm';
 import type { DebateSide } from '@/lib/prompts';
 import type { TrainingSignal } from '@/lib/trainingSignals';
+import type { NextDrill } from '@/lib/learnerProfile';
 import { cn } from '@/lib/utils';
 import { ChatMessages } from '@/components/chat/ChatMessages';
 import { HistoryPanel } from '@/components/chat/HistoryPanel';
@@ -20,6 +21,7 @@ interface Props {
   round: 'opening' | 'rebuttal' | 'reply';
   onRoundChange: (value: 'opening' | 'rebuttal' | 'reply') => void;
   checklist: TrainingSignal[];
+  nextDrill?: NextDrill;
   messages: ChatMessage[];
   poi?: string;
   streaming?: string;
@@ -44,6 +46,7 @@ export function TrainingDrawer({
   round,
   onRoundChange,
   checklist,
+  nextDrill,
   messages,
   poi,
   streaming,
@@ -133,6 +136,20 @@ export function TrainingDrawer({
             </div>
           ))}
         </div>
+        {nextDrill && (
+          <div className="mt-3 rounded-lg border border-wsc-calm/20 bg-wsc-calm/10 px-3 py-2">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-wsc-calm/80">
+              Next drill
+            </div>
+            <div className="mt-1 text-xs font-semibold text-white/90">{nextDrill.title}</div>
+            <div className="mt-0.5 text-[11px] leading-snug text-white/55">
+              {nextDrill.detail}
+            </div>
+            <div className="mt-1 text-[10px] leading-snug text-white/35">
+              {nextDrill.reason}
+            </div>
+          </div>
+        )}
       </section>
 
       {showHistory && (

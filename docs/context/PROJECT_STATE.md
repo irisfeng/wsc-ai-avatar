@@ -19,6 +19,7 @@ The primary experience is `/debate`:
 - Quasi-real-time WSC training signals: Time, Structure, Evidence, POI, and Clarity.
 - Training side panel on desktop and mobile drawer on narrow screens.
 - Debate and judge sessions stored locally in IndexedDB.
+- Local learner profile memory stores preferred avatar, practiced motions, recurring weak signals, and next recommended drill.
 
 ## Explicit Boundary
 
@@ -30,14 +31,11 @@ It is not yet a true realtime duplex audio system. WebRTC, OpenAI Realtime API, 
 
 ## Current Priorities
 
-1. Durable project memory and agent handoff discipline.
-2. Executable current-stage verifier.
-3. Learner profile memory beyond raw sessions.
-4. Skill registry for reusable debate training workflows.
-5. Training panel as an artifact/review surface.
-6. Voice steering and barge-in behavior.
-7. Practice-loop automation.
-8. Realtime audio proof of concept.
+1. Skill registry for reusable debate training workflows.
+2. Training panel as an artifact/review surface.
+3. Voice steering and barge-in behavior.
+4. Practice-loop automation.
+5. Realtime audio proof of concept.
 
 ## Known Risks
 
