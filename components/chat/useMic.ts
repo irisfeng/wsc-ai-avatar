@@ -1,6 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  accumulateSpeechResults,
+  normalizeSpeechText,
+  type SpeechResultChunk
+} from '@/lib/speechTranscript';
 
 /**
  * Browser-native Web Speech recognition (Chrome / Edge). English by default.
@@ -10,6 +15,8 @@ export interface MicState {
   listening: boolean;
   supported: boolean;
   interim: string;
+  finalText: string;
+  transcript: string;
   error?: string;
 }
 
@@ -18,10 +25,13 @@ type SRCtor = new () => SR;
 
 export function useMic(lang = 'en-US') {
   const recRef = useRef<SR | null>(null);
+  const finalTextRef = useRef('');
   const [state, setState] = useState<MicState>({
     listening: false,
     supported: true,
-    interim: ''
+    interim: '',
+    finalText: '',
+    transcript: ''
   });
 
   useEffect(() => {
@@ -52,27 +62,46 @@ export function useMic(lang = 'en-US') {
     (onFinal: (final: string) => void) => {
       const rec = recRef.current;
       if (!rec) return;
-      let finalBuf = '';
+      finalTextRef.current = '';
       rec.onresult = (e: SpeechRecognitionEvent) => {
-        let interim = '';
+        const chunks: SpeechResultChunk[] = [];
         for (let i = e.resultIndex; i < e.results.length; i += 1) {
           const r = e.results[i];
-          if (r.isFinal) finalBuf += r[0].transcript + ' ';
-          else interim += r[0].transcript;
+          chunks.push({ isFinal: r.isFinal, transcript: r[0].transcript });
         }
-        setState((s) => ({ ...s, interim }));
+        const next = accumulateSpeechResults(finalTextRef.current, chunks);
+        finalTextRef.current = next.finalText;
+        setState((s) => ({
+          ...s,
+          interim: next.interimText,
+          finalText: next.finalText,
+          transcript: next.transcript
+        }));
       };
       rec.onerror = (e: SpeechRecognitionErrorEvent) => {
         setState((s) => ({ ...s, error: e.error, listening: false }));
       };
       rec.onend = () => {
-        setState((s) => ({ ...s, listening: false, interim: '' }));
-        const out = finalBuf.trim();
+        const out = normalizeSpeechText(finalTextRef.current);
+        setState((s) => ({
+          ...s,
+          listening: false,
+          interim: '',
+          finalText: out,
+          transcript: out
+        }));
         if (out) onFinal(out);
       };
       try {
         rec.start();
-        setState((s) => ({ ...s, listening: true, error: undefined }));
+        setState((s) => ({
+          ...s,
+          listening: true,
+          interim: '',
+          finalText: '',
+          transcript: '',
+          error: undefined
+        }));
       } catch (err) {
         setState((s) => ({
           ...s,

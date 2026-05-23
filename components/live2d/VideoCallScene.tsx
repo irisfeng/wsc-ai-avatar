@@ -26,6 +26,11 @@ interface Props {
   caption?: string;
   /** avatar picker / mode chips, anchored top-right */
   topRightSlot?: React.ReactNode;
+  micActive?: boolean;
+  micDisabled?: boolean;
+  onMicClick?: () => void;
+  onEndCall?: () => void;
+  trainingSlot?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 }
@@ -36,6 +41,11 @@ export function VideoCallScene({
   speaking = false,
   caption,
   topRightSlot,
+  micActive = false,
+  micDisabled = false,
+  onMicClick,
+  onEndCall,
+  trainingSlot,
   children,
   className
 }: Props) {
@@ -138,7 +148,7 @@ export function VideoCallScene({
               When AI is speaking we show the last sentence as a
               live subtitle — Pika's signature element. */}
       {caption && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-28 z-40 flex justify-center px-6">
+        <div className="pointer-events-none absolute inset-x-0 bottom-80 z-40 flex justify-center px-6">
           <div
             className="max-w-2xl rounded-xl border border-white/[0.08] px-4 py-2 text-center text-sm leading-snug text-white/95 backdrop-blur-md"
             style={{
@@ -148,6 +158,12 @@ export function VideoCallScene({
           >
             {caption}
           </div>
+        </div>
+      )}
+
+      {trainingSlot && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-64 z-40 flex justify-center">
+          <div className="pointer-events-auto w-full">{trainingSlot}</div>
         </div>
       )}
 
@@ -180,7 +196,14 @@ export function VideoCallScene({
 
         {/* Centre: control cluster */}
         <div className="pointer-events-auto flex items-center gap-2">
-          <CallButton tone="default" icon={<Mic className="h-4 w-4" />} hint="mic" />
+          <CallButton
+            tone="default"
+            icon={micActive ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            hint={micActive ? 'stop mic' : 'mic'}
+            active={micActive}
+            disabled={micDisabled}
+            onClick={onMicClick}
+          />
           <CallButton
             tone="default"
             icon={<Captions className="h-4 w-4" />}
@@ -192,7 +215,12 @@ export function VideoCallScene({
             icon={<Volume2 className="h-4 w-4" />}
             hint="speaker"
           />
-          <CallButton tone="leave" icon={<PhoneOff className="h-5 w-5" />} hint="leave" />
+          <CallButton
+            tone="leave"
+            icon={<PhoneOff className="h-5 w-5" />}
+            hint="leave"
+            onClick={onEndCall}
+          />
         </div>
 
         {/* Self-view tile — bottom-right ("YOU" thumbnail) */}
@@ -256,15 +284,19 @@ function CallButton({
   icon,
   hint,
   tone,
-  active = false
+  active = false,
+  disabled = false,
+  onClick
 }: {
   icon: React.ReactNode;
   hint: string;
   tone: 'default' | 'leave';
   active?: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
 }) {
   const base =
-    'group relative inline-flex h-11 w-11 items-center justify-center rounded-full border backdrop-blur-md transition-all duration-200';
+    'group relative inline-flex h-11 w-11 items-center justify-center rounded-full border backdrop-blur-md transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-45';
   const palette =
     tone === 'leave'
       ? 'border-rose-400/50 bg-rose-500/85 text-white shadow-[0_0_22px_-4px_rgba(244,63,94,0.75)] hover:bg-rose-500'
@@ -278,6 +310,8 @@ function CallButton({
   return (
     <button
       type="button"
+      onClick={onClick}
+      disabled={disabled}
       aria-label={hint}
       title={hint}
       className={cn(base, palette)}

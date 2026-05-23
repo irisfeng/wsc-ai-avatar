@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Mic, Send, Square } from 'lucide-react';
+import { ArrowLeft, Mic, PanelRightOpen, Send, Square } from 'lucide-react';
 import type { ChatMessage } from '@/lib/llm';
 import type { DebateSide } from '@/lib/prompts';
 import { MOTIONS } from '@/lib/motions';
@@ -21,9 +21,9 @@ import { SentenceTtsQueue } from '@/components/chat/sentenceTtsQueue';
 import { AvatarPicker } from '@/components/chat/AvatarPicker';
 import { VideoCallScene } from '@/components/live2d/VideoCallScene';
 import { useAudioMouth } from '@/components/live2d/useLipSync';
-import { ChatMessages } from '@/components/chat/ChatMessages';
-import { MotionPicker } from '@/components/chat/MotionPicker';
-import { HistoryPanel } from '@/components/chat/HistoryPanel';
+import { TrainingDrawer } from '@/components/chat/TrainingDrawer';
+import { TrainingMetricStrip } from '@/components/chat/TrainingMetricStrip';
+import { computeTrainingSignals } from '@/lib/trainingSignals';
 import {
   startDebateSession,
   updateDebateSession,
@@ -72,12 +72,15 @@ export default function DebatePage() {
   const [showHistory, setShowHistory] = useState(false);
   const [historyKey, setHistoryKey] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [turnStartedAt, setTurnStartedAt] = useState<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const ttsQueueRef = useRef<SentenceTtsQueue | null>(null);
   const sentenceCursorRef = useRef(0);
 
   const mic = useMic('en-US');
-  const { play, prime } = useAudioMouth();
+  const { play, prime, stop: stopAudio } = useAudioMouth();
 
   // Persist session whenever messages change (debounced via effect).
   useEffect(() => {
@@ -108,6 +111,35 @@ export default function DebatePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
 
+  useEffect(() => {
+    if (turnStartedAt === null) return;
+    const tick = () => {
+      setElapsedSeconds(Math.max(0, Math.floor((Date.now() - turnStartedAt) / 1000)));
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [turnStartedAt]);
+
+  const liveUserTranscript = [input, mic.transcript].filter(Boolean).join(' ').trim();
+  const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+  const signalTranscript = liveUserTranscript || lastUserMessage;
+  const trainingSignals = computeTrainingSignals({
+    transcript: signalTranscript,
+    elapsedSeconds,
+    round,
+    pendingPoi: poi
+  });
+  const visibleMetrics = [
+    trainingSignals.time,
+    trainingSignals.structure,
+    trainingSignals.evidence,
+    trainingSignals.poi
+  ];
+  const micStatus = mic.listening
+    ? `录音中... ${mic.transcript || '(开始说话)'}`
+    : undefined;
+
   function restoreSession(s: Session) {
     if (s.kind !== 'debate') return;
     const d = s as DebateSession;
@@ -119,6 +151,8 @@ export default function DebatePage() {
     setShowHistory(false);
     setPoi(undefined);
     setStreaming('');
+    setElapsedSeconds(0);
+    setTurnStartedAt(null);
   }
 
   function newSession() {
@@ -127,11 +161,14 @@ export default function DebatePage() {
     setPoi(undefined);
     setStreaming('');
     setEmotionWord(undefined);
+    setElapsedSeconds(0);
+    setTurnStartedAt(null);
   }
 
   async function send(textToSend: string) {
     const userMsg: ChatMessage = { role: 'user', content: textToSend.trim() };
     if (!userMsg.content) return;
+    setTurnStartedAt(null);
 
     // E2: warm up AudioContext inside the user-gesture handler.
     void prime();
@@ -147,6 +184,7 @@ export default function DebatePage() {
     // Abort any in-flight stream / TTS from a previous turn.
     abortRef.current?.abort();
     ttsQueueRef.current?.abort();
+    stopAudio();
     const ctl = new AbortController();
     abortRef.current = ctl;
     const ttsQueue = new SentenceTtsQueue({ voice: avatar.voice });
@@ -218,14 +256,24 @@ export default function DebatePage() {
   function stopStreaming() {
     abortRef.current?.abort();
     ttsQueueRef.current?.abort();
+    stopAudio();
+    setBusy(false);
+  }
+
+  function endCall() {
+    if (mic.listening) mic.stop();
+    stopStreaming();
   }
 
   function toggleMic() {
     if (mic.listening) {
       mic.stop();
+      setTurnStartedAt(null);
     } else {
       // E2: also warm up audio here so voice-only flow gets sound.
       void prime();
+      setElapsedSeconds(0);
+      setTurnStartedAt(Date.now());
       mic.start((finalText) => {
         if (finalText) void send(finalText);
       });
@@ -233,8 +281,8 @@ export default function DebatePage() {
   }
 
   return (
-    <main className="grid h-screen grid-cols-1 md:grid-cols-[1fr_minmax(420px,_36rem)]">
-      <section className="relative h-[40vh] md:h-screen">
+    <main className="relative h-screen overflow-hidden bg-wsc-ink md:grid md:grid-cols-[minmax(0,_1fr)_minmax(360px,_28rem)]">
+      <section className="relative h-screen min-w-0">
         <VideoCallScene
           speakerName={`${avatar.label}`}
           speakerHint={
@@ -243,15 +291,22 @@ export default function DebatePage() {
           speaking={busy}
           caption={liveCaption(streaming, messages)}
           className="absolute inset-0"
+          micActive={mic.listening}
+          micDisabled={!mic.supported || busy}
+          onMicClick={toggleMic}
+          onEndCall={endCall}
+          trainingSlot={<TrainingMetricStrip signals={visibleMetrics} />}
           topRightSlot={
-            <AvatarPicker
-              value={avatarId}
-              onChange={setAvatarId}
-              // Lock the picker while the AI is generating + speaking —
-              // mid-turn swaps destroy the Pixi WebGL context and kill
-              // the in-flight sentence-level TTS queue.
-              disabled={busy}
-            />
+            <div className="hidden md:block">
+              <AvatarPicker
+                value={avatarId}
+                onChange={setAvatarId}
+                // Lock the picker while the AI is generating + speaking —
+                // mid-turn swaps destroy the Pixi WebGL context and kill
+                // the in-flight sentence-level TTS queue.
+                disabled={busy}
+              />
+            </div>
           }
         >
           <Live2DStage
@@ -278,95 +333,23 @@ export default function DebatePage() {
         >
           <ArrowLeft className="h-3.5 w-3.5" /> 返回
         </Link>
-      </section>
+        <button
+          type="button"
+          className="absolute right-6 top-6 z-40 inline-flex items-center gap-1 rounded-full bg-black/50 px-3 py-1.5 text-xs text-white/80 backdrop-blur hover:bg-black/70 md:hidden"
+          onClick={() => setDrawerOpen(true)}
+        >
+          <PanelRightOpen className="h-3.5 w-3.5" /> Training
+        </button>
 
-      <aside className="flex h-[60vh] flex-col border-l border-white/10 bg-wsc-ink/95 md:h-screen">
-        <header className="space-y-3 border-b border-white/10 p-4">
-          <MotionPicker value={motion} onChange={setMotion} />
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <Toggle
-              active={userSide === 'proposition'}
-              onClick={() => setUserSide('proposition')}
-              label="我:Proposition"
-            />
-            <Toggle
-              active={userSide === 'opposition'}
-              onClick={() => setUserSide('opposition')}
-              label="我:Opposition"
-            />
-            <span className="mx-2 w-px self-stretch bg-white/10" />
-            {(['opening', 'rebuttal', 'reply'] as const).map((r) => (
-              <Toggle
-                key={r}
-                active={round === r}
-                onClick={() => setRound(r)}
-                label={r}
-              />
-            ))}
-            <span className="ml-auto flex items-center gap-1">
-              <button
-                type="button"
-                className="rounded-full bg-white/5 px-2 py-0.5 text-[11px] text-white/60 hover:bg-white/10"
-                onClick={newSession}
-                title="新建一轮"
-              >
-                + 新建
-              </button>
-              <button
-                type="button"
-                className={
-                  showHistory
-                    ? 'rounded-full bg-wsc-calm px-2 py-0.5 text-[11px] text-wsc-ink'
-                    : 'rounded-full bg-white/5 px-2 py-0.5 text-[11px] text-white/60 hover:bg-white/10'
-                }
-                onClick={() => setShowHistory((v) => !v)}
-              >
-                历史
-              </button>
-            </span>
-          </div>
-        </header>
-
-        {showHistory && (
-          <div className="border-b border-white/10 bg-white/[0.02] py-2">
-            <HistoryPanel
-              kind="debate"
-              refreshKey={historyKey}
-              onRestore={restoreSession}
-            />
-          </div>
-        )}
-
-        <div className="flex-1 overflow-y-auto p-4">
-          {messages.length === 0 && !streaming ? (
-            <p className="text-sm text-white/40">
-              点击麦克风或在下方输入你的第一段发言。AI 数字人将以对方辩手身份回应。
-            </p>
-          ) : (
-            <ChatMessages messages={messages} poi={poi} streaming={streaming} />
-          )}
-          {error && <p className="mt-3 text-xs text-wsc-accent">{error}</p>}
-          {mic.listening && (
-            <p className="mt-3 text-xs text-wsc-calm">
-              录音中… {mic.interim || '(开始说话)'}
-            </p>
-          )}
-          {provider && (
-            <p className="mt-3 font-mono text-[10px] text-white/30">
-              powered by {provider}
-            </p>
-          )}
-        </div>
-
-        <footer className="space-y-2 border-t border-white/10 p-4">
+        <div className="absolute inset-x-4 bottom-20 z-50 mx-auto max-w-3xl rounded-xl border border-white/10 bg-black/55 p-3 backdrop-blur-md">
           <textarea
-            className="input min-h-[72px] resize-none"
-            placeholder="输入你的发言（英文）或使用左侧麦克风…"
+            className="input min-h-[54px] resize-none"
+            placeholder="输入你的发言（英文）或使用麦克风..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={busy}
           />
-          <div className="flex items-center gap-2">
+          <div className="mt-2 flex items-center gap-2">
             <button
               type="button"
               className="btn-ghost"
@@ -395,36 +378,64 @@ export default function DebatePage() {
               onClick={() => void send(input)}
             >
               <Send className="h-4 w-4" />
-              {busy ? 'AI 思考中…' : '发送'}
+              {busy ? 'AI 思考中...' : '发送'}
             </button>
           </div>
-        </footer>
-      </aside>
-    </main>
-  );
-}
+        </div>
+      </section>
 
-function Toggle({
-  active,
-  onClick,
-  label
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={
-        active
-          ? 'rounded-full bg-wsc-calm px-3 py-1 text-wsc-ink'
-          : 'rounded-full bg-white/5 px-3 py-1 text-white/70 hover:bg-white/10'
-      }
-    >
-      {label}
-    </button>
+      <div className="hidden min-h-0 md:block">
+        <TrainingDrawer
+          open
+          mobile={false}
+          motion={motion}
+          onMotionChange={setMotion}
+          userSide={userSide}
+          onUserSideChange={setUserSide}
+          round={round}
+          onRoundChange={setRound}
+          checklist={trainingSignals.checklist}
+          messages={messages}
+          poi={poi}
+          streaming={streaming}
+          error={error}
+          provider={provider}
+          micStatus={micStatus}
+          historyKey={historyKey}
+          showHistory={showHistory}
+          onToggleHistory={() => setShowHistory((v) => !v)}
+          onRestoreSession={restoreSession}
+          onNewSession={newSession}
+          onClose={() => setDrawerOpen(false)}
+        />
+      </div>
+
+      <div className="md:hidden">
+        <TrainingDrawer
+          open={drawerOpen}
+          mobile
+          motion={motion}
+          onMotionChange={setMotion}
+          userSide={userSide}
+          onUserSideChange={setUserSide}
+          round={round}
+          onRoundChange={setRound}
+          checklist={trainingSignals.checklist}
+          messages={messages}
+          poi={poi}
+          streaming={streaming}
+          error={error}
+          provider={provider}
+          micStatus={micStatus}
+          historyKey={historyKey}
+          showHistory={showHistory}
+          onToggleHistory={() => setShowHistory((v) => !v)}
+          onRestoreSession={restoreSession}
+          onNewSession={newSession}
+          onClose={() => setDrawerOpen(false)}
+        />
+      </div>
+    </main>
   );
 }
 
