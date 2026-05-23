@@ -1,0 +1,862 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WSC AI Avatar · 当前阶段测试方案与验收标准</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #07080d;
+        --panel: #111622;
+        --panel-2: #171d2a;
+        --panel-3: #202737;
+        --line: rgba(255, 255, 255, 0.1);
+        --line-strong: rgba(255, 255, 255, 0.2);
+        --text: #f6f3ec;
+        --muted: rgba(246, 243, 236, 0.68);
+        --soft: rgba(246, 243, 236, 0.45);
+        --violet: #9b7bff;
+        --cyan: #59d7ff;
+        --rose: #ff5378;
+        --amber: #f2c66d;
+        --green: #7de5a5;
+        --blue: #79b9ff;
+        --shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 18% 0%, rgba(155, 123, 255, 0.18), transparent 34rem),
+          radial-gradient(circle at 86% 10%, rgba(89, 215, 255, 0.11), transparent 30rem),
+          linear-gradient(180deg, #090a11 0%, #06070c 100%);
+        color: var(--text);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", "Noto Sans SC", sans-serif;
+        letter-spacing: 0;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .wrap {
+        width: min(1240px, calc(100% - 32px));
+        margin: 0 auto;
+      }
+
+      .hero {
+        padding: 48px 0 24px;
+      }
+
+      .topline,
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .topline {
+        justify-content: space-between;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 7px 11px;
+        background: rgba(255, 255, 255, 0.045);
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 99px;
+        background: var(--rose);
+        box-shadow: 0 0 18px rgba(255, 83, 120, 0.65);
+      }
+
+      h1 {
+        max-width: 960px;
+        margin: 24px 0 14px;
+        font-size: clamp(38px, 6.4vw, 82px);
+        line-height: 0.95;
+        font-weight: 780;
+      }
+
+      h2 {
+        margin: 0 0 14px;
+        font-size: clamp(24px, 3vw, 38px);
+        line-height: 1.05;
+      }
+
+      h3 {
+        margin: 0;
+        font-size: 17px;
+      }
+
+      p {
+        margin: 0;
+      }
+
+      code {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 2px 6px;
+        background: rgba(255, 255, 255, 0.055);
+        color: #e9f6ff;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 0.92em;
+      }
+
+      pre {
+        margin: 0;
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+        background: #090d15;
+        color: rgba(246, 243, 236, 0.86);
+        line-height: 1.55;
+      }
+
+      .lead {
+        max-width: 860px;
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.6;
+      }
+
+      .nav {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        border-block: 1px solid var(--line);
+        background: rgba(7, 8, 13, 0.82);
+        backdrop-filter: blur(16px);
+      }
+
+      .nav-inner {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 10px 0;
+      }
+
+      .nav a {
+        white-space: nowrap;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 7px 11px;
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      section {
+        padding: 30px 0;
+      }
+
+      .grid {
+        display: grid;
+        gap: 16px;
+      }
+
+      .grid.two {
+        grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
+      }
+
+      .grid.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .grid.four {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .panel,
+      .card,
+      .gate,
+      .stage,
+      .flow,
+      .table-wrap {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(17, 22, 34, 0.92);
+        box-shadow: var(--shadow);
+      }
+
+      .panel,
+      .card,
+      .gate,
+      .stage {
+        padding: 18px;
+      }
+
+      .muted {
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .soft {
+        color: var(--soft);
+      }
+
+      .metric {
+        min-height: 112px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+        background: rgba(255, 255, 255, 0.035);
+      }
+
+      .metric span,
+      .label {
+        color: var(--soft);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 24px;
+      }
+
+      .accent {
+        color: var(--cyan);
+      }
+
+      .rose {
+        color: var(--rose);
+      }
+
+      .amber {
+        color: var(--amber);
+      }
+
+      .green {
+        color: var(--green);
+      }
+
+      .timeline {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .stage {
+        position: relative;
+        min-height: 170px;
+        overflow: hidden;
+      }
+
+      .stage::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 4px;
+        background: var(--stage-color, var(--violet));
+      }
+
+      .stage .nb {
+        font-family: "SFMono-Regular", Consolas, monospace;
+        color: var(--stage-color, var(--violet));
+        font-size: 13px;
+      }
+
+      .stage ul,
+      .gate ul,
+      .card ul {
+        margin: 12px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .stage li,
+      .gate li,
+      .card li {
+        position: relative;
+        padding-left: 18px;
+        margin: 8px 0;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .stage li::before,
+      .gate li::before,
+      .card li::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0.68em;
+        width: 7px;
+        height: 1px;
+        background: currentColor;
+        opacity: 0.7;
+      }
+
+      .matrix {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 900px;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 13px 14px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        position: sticky;
+        top: 0;
+        background: #111622;
+        color: rgba(246, 243, 236, 0.76);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      td {
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      td strong {
+        color: var(--text);
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 4px 8px;
+        background: rgba(255, 255, 255, 0.07);
+        color: rgba(246, 243, 236, 0.78);
+        font-size: 12px;
+      }
+
+      .tag.p0 {
+        background: rgba(255, 83, 120, 0.14);
+        color: #ffb7c8;
+      }
+
+      .tag.p1 {
+        background: rgba(242, 198, 109, 0.14);
+        color: #ffe0a0;
+      }
+
+      .tag.pass {
+        background: rgba(125, 229, 165, 0.13);
+        color: #b7f5cc;
+      }
+
+      .gate {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+
+      .badge {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 999px;
+        border: 1px solid var(--line-strong);
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--green);
+        font-weight: 800;
+      }
+
+      .flow {
+        padding: 16px;
+      }
+
+      .flow-steps {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .flow-step {
+        min-height: 128px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        background:
+          linear-gradient(135deg, rgba(155, 123, 255, 0.11), transparent 70%),
+          rgba(255, 255, 255, 0.035);
+      }
+
+      .flow-step b {
+        display: block;
+        color: var(--text);
+        margin: 8px 0 6px;
+      }
+
+      .flow-step p {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .callout {
+        border: 1px solid rgba(89, 215, 255, 0.22);
+        border-radius: 8px;
+        padding: 16px;
+        background:
+          radial-gradient(circle at 100% 0%, rgba(89, 215, 255, 0.14), transparent 16rem),
+          rgba(89, 215, 255, 0.055);
+      }
+
+      .warn {
+        border-color: rgba(242, 198, 109, 0.24);
+        background:
+          radial-gradient(circle at 100% 0%, rgba(242, 198, 109, 0.13), transparent 16rem),
+          rgba(242, 198, 109, 0.055);
+      }
+
+      .footer {
+        padding: 28px 0 48px;
+        color: var(--soft);
+        font-size: 13px;
+      }
+
+      @media (max-width: 920px) {
+        .grid.two,
+        .grid.three,
+        .grid.four,
+        .timeline,
+        .flow-steps {
+          grid-template-columns: 1fr;
+        }
+
+        .hero {
+          padding-top: 34px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="hero">
+      <div class="wrap">
+        <div class="topline">
+          <span class="pill"><span class="dot"></span>Current Stage QA · 2026-05-23</span>
+          <span class="pill">Scope: /debate Pika-style half-duplex voice call</span>
+        </div>
+        <h1>测试方案与验收标准</h1>
+        <p class="lead">
+          当前阶段不是验证“完整商业化实时音视频产品”，而是验证一个可继续迭代的 AI 音视频对话 app 雏形：
+          Live2D 通话界面、浏览器 STT、LLM 流式回复、分句 TTS、口型同步、准实时训练反馈和基础会话存档。
+        </p>
+        <div class="grid four" style="margin-top: 24px">
+          <div class="metric">
+            <span>Release gate</span>
+            <strong>0 个 P0</strong>
+            <p class="muted">任一 P0 未通过，本阶段不算验收。</p>
+          </div>
+          <div class="metric">
+            <span>Automated</span>
+            <strong>typecheck + tests</strong>
+            <p class="muted">每轮 UI/语音链路变更后必须跑。</p>
+          </div>
+          <div class="metric">
+            <span>Manual call QA</span>
+            <strong>10 分钟</strong>
+            <p class="muted">覆盖文字、麦克风、中断、移动端抽屉。</p>
+          </div>
+          <div class="metric">
+            <span>Resource guard</span>
+            <strong>&lt; 80°C 持续</strong>
+            <p class="muted">超过阈值暂停大模型/多媒体压力测试。</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <nav class="nav">
+      <div class="wrap nav-inner">
+        <a href="#scope">阶段边界</a>
+        <a href="#flow">测试流水线</a>
+        <a href="#gates">验收门槛</a>
+        <a href="#matrix">测试矩阵</a>
+        <a href="#manual">手动脚本</a>
+        <a href="#resource">资源阈值</a>
+        <a href="#defects">缺陷分级</a>
+      </div>
+    </nav>
+
+    <main>
+      <section id="scope">
+        <div class="wrap grid two">
+          <div class="panel">
+            <h2>阶段边界</h2>
+            <p class="muted">
+              目标是判断当前雏形能否作为“可落地应用”的下一阶段基础，而不是要求它已经达到 Pika 级实时音视频能力。
+              验收语言必须明确区分“已实现”和“下一阶段目标”。
+            </p>
+            <div class="row" style="margin-top: 16px">
+              <span class="tag pass">已纳入验收</span>
+              <span class="tag p1">观察项</span>
+              <span class="tag p0">不通过即阻断</span>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>本阶段明确不承诺</h3>
+            <ul>
+              <li>不验收真正 WebRTC / Realtime API 双向音频。</li>
+              <li>不验收多人连麦、服务端房间、云端部署和账号体系。</li>
+              <li>不验收训练数据闭环学习，只验收启发式准实时反馈是否稳定可解释。</li>
+              <li>不验收商业级语音克隆，只验收当前 TTS voice 是否适配 avatar 形象。</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="flow">
+        <div class="wrap">
+          <h2>测试流水线</h2>
+          <div class="flow">
+            <div class="flow-steps">
+              <div class="flow-step">
+                <span class="label">01</span>
+                <b>静态健康</b>
+                <p><code>npm run typecheck</code> 和 <code>npm test</code> 必须通过。</p>
+              </div>
+              <div class="flow-step">
+                <span class="label">02</span>
+                <b>API 冒烟</b>
+                <p>确认 chat / tts 能返回；TTS voice id 能合成 MP3。</p>
+              </div>
+              <div class="flow-step">
+                <span class="label">03</span>
+                <b>桌面视觉</b>
+                <p>Chrome 打开 <code>/debate</code>，检查首屏无遮挡、无错误 overlay。</p>
+              </div>
+              <div class="flow-step">
+                <span class="label">04</span>
+                <b>移动端视觉</b>
+                <p>390×844 或同级窄屏，检查 Training 抽屉和输入区。</p>
+              </div>
+              <div class="flow-step">
+                <span class="label">05</span>
+                <b>通话链路</b>
+                <p>文字输入、麦克风输入、AI 回复、TTS、口型、中断全部走一遍。</p>
+              </div>
+              <div class="flow-step">
+                <span class="label">06</span>
+                <b>资源观察</b>
+                <p>10 分钟连续使用，观察 CPU、温度、卡顿、风扇和内存。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="gates">
+        <div class="wrap">
+          <h2>验收门槛</h2>
+          <div class="grid three">
+            <div class="gate">
+              <div class="badge">P0</div>
+              <div>
+                <h3>硬性阻断</h3>
+                <ul>
+                  <li>页面空白、Next/Vite 错误 overlay、核心按钮不可点击。</li>
+                  <li>语音/文本任一路径无法完成一轮对话。</li>
+                  <li>Stop / End Call 无法中断 LLM 或 TTS。</li>
+                  <li>移动端或桌面首屏遮挡 avatar 脸、输入框或主要控制。</li>
+                  <li>连续测试导致温度或 CPU 明显失控。</li>
+                </ul>
+              </div>
+            </div>
+            <div class="gate">
+              <div class="badge" style="color: var(--amber)">P1</div>
+              <div>
+                <h3>体验必须修</h3>
+                <ul>
+                  <li>TTS voice 与当前 avatar 明显违和。</li>
+                  <li>训练反馈文案无法解释状态变化。</li>
+                  <li>移动端抽屉遮住内容但无法关闭或滚动。</li>
+                  <li>明显的布局抖动、长文本溢出、按钮文字挤压。</li>
+                </ul>
+              </div>
+            </div>
+            <div class="gate">
+              <div class="badge" style="color: var(--blue)">P2</div>
+              <div>
+                <h3>可延期优化</h3>
+                <ul>
+                  <li>非核心动效不够精致。</li>
+                  <li>Live2D 库级 deprecation warning。</li>
+                  <li>少量文案润色、细节间距、训练面板信息密度。</li>
+                  <li>更多 voice 候选和角色人格映射。</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="matrix">
+        <div class="wrap">
+          <h2>测试矩阵</h2>
+          <div class="table-wrap">
+            <table class="matrix">
+              <thead>
+                <tr>
+                  <th>模块</th>
+                  <th>测试项</th>
+                  <th>方法</th>
+                  <th>通过标准</th>
+                  <th>优先级</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>静态质量</strong></td>
+                  <td>TypeScript 与单元测试</td>
+                  <td><code>npm run typecheck</code><br /><code>npm test</code></td>
+                  <td>退出码 0；当前 13 个测试文件、122 个测试全部通过。</td>
+                  <td><span class="tag p0">P0</span></td>
+                </tr>
+                <tr>
+                  <td><strong>页面加载</strong></td>
+                  <td><code>/debate</code> 首屏</td>
+                  <td>Chrome 打开本地 dev server；观察 console。</td>
+                  <td>页面非空；无框架错误 overlay；无新增 app error。Live2D 既有 warning 可记录为已知项。</td>
+                  <td><span class="tag p0">P0</span></td>
+                </tr>
+                <tr>
+                  <td><strong>桌面 UI</strong></td>
+                  <td>avatar、HUD、输入区、右侧 Training</td>
+                  <td>宽屏约 2048×1152，或用户截图同级比例。</td>
+                  <td>avatar 脸部、嘴部、输入框、通话按钮不被训练指标或字幕遮挡；右侧面板可读。</td>
+                  <td><span class="tag p0">P0</span></td>
+                </tr>
+                <tr>
+                  <td><strong>移动 UI</strong></td>
+                  <td>390×844 窄屏与 Training 抽屉</td>
+                  <td>浏览器移动视口；打开/关闭 Training。</td>
+                  <td>舞台 HUD 不盖脸；Training 按钮可见；抽屉可滚动、可关闭；composer 和通话按钮可操作。</td>
+                  <td><span class="tag p0">P0</span></td>
+                </tr>
+                <tr>
+                  <td><strong>文字对话</strong></td>
+                  <td>输入、发送、流式回复</td>
+                  <td>输入 1 句 opening speech，按 Enter 或发送。</td>
+                  <td>按钮启用；用户消息进入历史；AI 流式输出；结束后消息落入 ChatMessages。</td>
+                  <td><span class="tag p0">P0</span></td>
+                </tr>
+                <tr>
+                  <td><strong>麦克风 STT</strong></td>
+                  <td>Chrome Web Speech API</td>
+                  <td>点击麦克风，允许权限，说 10-20 秒英文。</td>
+                  <td>能看到 transcript 或最终文本；停止后能触发发送；不支持浏览器时按钮 disabled 且不误导。</td>
+                  <td><span class="tag p0">P0</span></td>
+                </tr>
+                <tr>
+                  <td><strong>TTS 与口型</strong></td>
+                  <td>分句 TTS、Live2D speak、mouth sync</td>
+                  <td>完成一轮 AI 回复，听声音并观察嘴型。</td>
+                  <td>有音频；嘴型随音频变化；Mao 默认 voice 为 <code>en-US-AnaNeural</code>；声音年轻活泼且不突兀。</td>
+                  <td><span class="tag p1">P1</span></td>
+                </tr>
+                <tr>
+                  <td><strong>中断控制</strong></td>
+                  <td>Stop / End Call</td>
+                  <td>AI 正在生成或说话时点击 Stop 或挂断。</td>
+                  <td>1 秒内停止继续输出/播放；busy 状态恢复；下一轮可继续发送。</td>
+                  <td><span class="tag p0">P0</span></td>
+                </tr>
+                <tr>
+                  <td><strong>训练反馈</strong></td>
+                  <td>Time / Structure / Evidence / POI / Clarity</td>
+                  <td>分别输入无立场、有例子、有 POI 的短发言。</td>
+                  <td>指标状态和 checklist 有可解释变化；反馈不要求“绝对评分”，但必须稳定、可预测。</td>
+                  <td><span class="tag p1">P1</span></td>
+                </tr>
+                <tr>
+                  <td><strong>会话存档</strong></td>
+                  <td>History、新建一轮、恢复</td>
+                  <td>发送至少一轮，打开历史，恢复旧 session。</td>
+                  <td>motion、side、round、messages 能恢复；新建一轮不污染旧记录。</td>
+                  <td><span class="tag p1">P1</span></td>
+                </tr>
+                <tr>
+                  <td><strong>失败态</strong></td>
+                  <td>LLM/TTS/API key 异常</td>
+                  <td>临时切断 provider 或留空 key，在本地复现。</td>
+                  <td>错误显示在 Training 面板；UI 不崩；Stop/新建一轮仍可用。</td>
+                  <td><span class="tag p1">P1</span></td>
+                </tr>
+                <tr>
+                  <td><strong>资源</strong></td>
+                  <td>CPU、温度、内存、卡顿</td>
+                  <td>Activity Monitor / iStat / powermetrics，10 分钟连续测试。</td>
+                  <td>无持续卡顿；温度不持续高于 80°C；高于 85°C 立即停止压力测试并记录。</td>
+                  <td><span class="tag p0">P0</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="manual">
+        <div class="wrap grid two">
+          <div class="panel">
+            <h2>10 分钟手动验收脚本</h2>
+            <div class="timeline">
+              <div class="stage" style="--stage-color: var(--cyan)">
+                <span class="nb">00:00</span>
+                <h3>启动</h3>
+                <ul>
+                  <li><code>npm run dev</code></li>
+                  <li>Chrome 打开 <code>http://localhost:3000/debate</code></li>
+                </ul>
+              </div>
+              <div class="stage" style="--stage-color: var(--violet)">
+                <span class="nb">02:00</span>
+                <h3>文字一轮</h3>
+                <ul>
+                  <li>输入简短英文发言。</li>
+                  <li>确认 AI 回复、TTS、口型。</li>
+                </ul>
+              </div>
+              <div class="stage" style="--stage-color: var(--amber)">
+                <span class="nb">04:00</span>
+                <h3>麦克风一轮</h3>
+                <ul>
+                  <li>允许麦克风权限。</li>
+                  <li>说 10-20 秒英文。</li>
+                </ul>
+              </div>
+              <div class="stage" style="--stage-color: var(--rose)">
+                <span class="nb">06:00</span>
+                <h3>中断</h3>
+                <ul>
+                  <li>AI 说话时点击 Stop。</li>
+                  <li>再发一轮确认可恢复。</li>
+                </ul>
+              </div>
+              <div class="stage" style="--stage-color: var(--green)">
+                <span class="nb">08:00</span>
+                <h3>移动端</h3>
+                <ul>
+                  <li>切 390×844。</li>
+                  <li>打开 Training 抽屉并滚动。</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <h2>建议测试语料</h2>
+            <pre>Opening:
+I strongly support the motion because a journey gives students resilience,
+but a clear destination gives that effort direction. For example, a WSC team
+that prepares for the Global Round learns more when it sets a measurable goal.
+
+Weak structure:
+I think this is good and maybe people learn things and there are many examples.
+
+Evidence trigger:
+For example, in debate training, teams that review recordings after every round
+can identify repeated flaws and improve faster.</pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="resource">
+        <div class="wrap grid two">
+          <div class="callout warn">
+            <h2>资源消耗验收线</h2>
+            <p class="muted">
+              你已经遇到过后台有声书生成导致 CPU 温度超过 75°C 的情况，因此本阶段验收必须把资源状态作为 gate。
+              如果机器正在跑 TTS 批处理、视频渲染、模型训练或大文件转码，不做语音链路压力测试。
+            </p>
+          </div>
+          <div class="panel">
+            <h3>阈值建议</h3>
+            <ul>
+              <li><span class="tag pass">正常</span> 温度低于 75°C，页面交互流畅，可继续。</li>
+              <li><span class="tag p1">谨慎</span> 75-80°C，减少并发，只跑短脚本。</li>
+              <li><span class="tag p0">停止</span> 超过 80°C 持续 3 分钟，暂停测试。</li>
+              <li><span class="tag p0">立即停止</span> 超过 85°C 或明显卡顿/风扇异常。</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="defects">
+        <div class="wrap grid two">
+          <div class="panel">
+            <h2>缺陷分级</h2>
+            <div class="grid">
+              <div class="callout">
+                <h3>P0 · 阻断验收</h3>
+                <p class="muted">核心链路断、界面被挡、无法恢复、资源失控、页面崩溃。</p>
+              </div>
+              <div class="callout warn">
+                <h3>P1 · 必须进入下轮修复</h3>
+                <p class="muted">体验明显违和但不阻断：voice 不合适、反馈不清晰、移动端细节粗糙。</p>
+              </div>
+              <div class="callout">
+                <h3>P2 · 可排期</h3>
+                <p class="muted">精修项：动效、视觉细节、更多角色、更多训练维度。</p>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <h2>验收输出物</h2>
+            <ul>
+              <li>命令输出：<code>npm run typecheck</code>、<code>npm test</code>。</li>
+              <li>截图：桌面首屏、移动首屏、移动 Training 抽屉。</li>
+              <li>浏览器控制台：error/warn 摘要，区分已知 Live2D warning 与新增错误。</li>
+              <li>语音记录：所用 avatar、voice id、TTS 是否有声、口型是否同步。</li>
+              <li>资源记录：测试前温度、测试中峰值、是否有后台重负载进程。</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap">
+        <p>
+          判定口径：当前阶段通过 = 可以进入“真正实时音频/WebRTC 或 Realtime API 技术验证”阶段；
+          当前阶段不通过 = 先修复 P0，再讨论实时化。
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
