@@ -47,9 +47,9 @@ export const AVATARS: Record<AvatarId, AvatarConfig> = {
     emoji: '🎨',
     modelUrl: '/live2d/models/Mao/runtime/Mao.model3.json',
     anchorX: 0.5,
-    anchorY: -0.05,
-    scale: 2.3,
-    voice: 'en-US-JennyNeural', // bright female, slightly playful
+    anchorY: 0.08,
+    scale: 2.05,
+    voice: 'en-US-AnaNeural', // younger, brighter female voice for Mao
     expressions: {
       confident: 'exp_01',
       thoughtful: 'exp_05',

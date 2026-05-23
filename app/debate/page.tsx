@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Mic, PanelRightOpen, Send, Square } from 'lucide-react';
+import { ArrowLeft, PanelRightOpen, Send, Square } from 'lucide-react';
 import type { ChatMessage } from '@/lib/llm';
 import type { DebateSide } from '@/lib/prompts';
 import { MOTIONS } from '@/lib/motions';
@@ -329,7 +329,7 @@ export default function DebatePage() {
         </VideoCallScene>
         <Link
           href="/"
-          className="absolute left-6 top-6 z-30 inline-flex items-center gap-1 rounded-full bg-black/50 px-3 py-1.5 text-xs text-white/80 backdrop-blur hover:bg-black/70"
+          className="absolute left-4 top-24 z-40 inline-flex items-center gap-1 rounded-full bg-black/45 px-3 py-1.5 text-xs text-white/75 backdrop-blur hover:bg-black/70 md:left-6"
         >
           <ArrowLeft className="h-3.5 w-3.5" /> 返回
         </Link>
@@ -341,46 +341,40 @@ export default function DebatePage() {
           <PanelRightOpen className="h-3.5 w-3.5" /> Training
         </button>
 
-        <div className="absolute inset-x-4 bottom-20 z-50 mx-auto max-w-3xl rounded-xl border border-white/10 bg-black/55 p-3 backdrop-blur-md">
-          <textarea
-            className="input min-h-[54px] resize-none"
-            placeholder="输入你的发言（英文）或使用麦克风..."
+        <div className="absolute inset-x-4 bottom-20 z-50 mx-auto flex max-w-2xl items-center gap-2 rounded-full border border-white/10 bg-black/58 p-2 shadow-[0_18px_50px_rgba(0,0,0,0.38)] backdrop-blur-md">
+          <input
+            className="min-w-0 flex-1 rounded-full bg-white/[0.055] px-4 py-3 text-sm text-wsc-paper outline-none transition-colors placeholder:text-white/30 focus:bg-white/[0.075]"
+            placeholder={mic.listening ? '正在听你发言...' : '输入你的发言（英文）或点击底部麦克风'}
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (!busy && input.trim()) void send(input);
+              }
+            }}
             disabled={busy}
           />
-          <div className="mt-2 flex items-center gap-2">
+          {busy ? (
             <button
               type="button"
-              className="btn-ghost"
-              onClick={toggleMic}
-              disabled={!mic.supported || busy}
-              title={mic.supported ? '浏览器麦克风（Chrome 推荐）' : '当前浏览器不支持'}
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10 text-white/90 transition-colors hover:bg-white/15"
+              onClick={stopStreaming}
+              title="中断当前生成"
             >
-              {mic.listening ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-              {mic.listening ? 'Stop' : 'Mic'}
+              <Square className="h-4 w-4" />
             </button>
-            {busy && (
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={stopStreaming}
-                title="中断当前生成"
-              >
-                <Square className="h-4 w-4" />
-                Stop
-              </button>
-            )}
+          ) : (
             <button
               type="button"
-              className="btn-primary flex-1"
-              disabled={busy || !input.trim()}
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-wsc-accent text-white transition-colors hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-45"
+              disabled={!input.trim()}
               onClick={() => void send(input)}
+              title="发送"
             >
               <Send className="h-4 w-4" />
-              {busy ? 'AI 思考中...' : '发送'}
             </button>
-          </div>
+          )}
         </div>
       </section>
 

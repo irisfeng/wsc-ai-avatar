@@ -148,7 +148,7 @@ export function VideoCallScene({
               When AI is speaking we show the last sentence as a
               live subtitle — Pika's signature element. */}
       {caption && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-80 z-40 flex justify-center px-6">
+        <div className="pointer-events-none absolute inset-x-0 bottom-36 z-40 flex justify-center px-6 md:bottom-32">
           <div
             className="max-w-2xl rounded-xl border border-white/[0.08] px-4 py-2 text-center text-sm leading-snug text-white/95 backdrop-blur-md"
             style={{
@@ -162,8 +162,8 @@ export function VideoCallScene({
       )}
 
       {trainingSlot && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-64 z-40 flex justify-center">
-          <div className="pointer-events-auto w-full">{trainingSlot}</div>
+        <div className="pointer-events-none absolute left-4 top-36 z-40 hidden md:block">
+          <div className="pointer-events-auto">{trainingSlot}</div>
         </div>
       )}
 
