@@ -31,6 +31,10 @@ body {
 .chip {
   @apply inline-flex items-center rounded-full bg-white/10 px-2.5 py-0.5 text-xs;
 }
+.drawer-icon-button {
+  @apply inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-white/70
+         transition-colors hover:bg-white/10 hover:text-white;
+}
 
 /* Audio waveform bars in VideoCallScene — referenced inline as
    `animation: wsc-bar Xs ease-in-out infinite` on each <span>. */
