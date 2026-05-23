@@ -6,7 +6,7 @@
 
 import type { ParsedSpeech } from '@/lib/parseEmotion';
 
-export type AvatarId = 'mao' | 'natori' | 'haru' | 'hiyori';
+export type AvatarId = 'mao' | 'rice' | 'ren' | 'hiyori';
 
 export interface AvatarConfig {
   id: AvatarId;
@@ -62,30 +62,53 @@ export const AVATARS: Record<AvatarId, AvatarConfig> = {
       angry: 'exp_07'
     }
   },
-  // Natori — formal male, glasses, gray hair. 11 expressions, half of them
-  // semantically named (Smile, Surprised, Angry, Sad, Blushing, Normal) —
-  // the strongest fit for a "senior debater" video-call opponent.
-  natori: {
-    id: 'natori',
-    label: 'Natori · 学者派',
-    blurb: 'WSC senior · scholar track',
-    emoji: '🎩',
-    modelUrl: '/live2d/models/Natori/runtime/Natori.model3.json',
+  // Rice — polished academy captain. Clean blue/white uniform, long silver
+  // hair, and a calmer "senior scholar" read than Haru/Natori.
+  rice: {
+    id: 'rice',
+    label: 'Rice · 学院队长',
+    blurb: 'WSC senior · strategy captain',
+    emoji: '📘',
+    modelUrl: '/live2d/models/Rice/runtime/Rice.model3.json',
     anchorX: 0.5,
     anchorY: -0.05,
-    scale: 2.1,
-    // Andrew is the younger, warmer male voice — softer than Guy.
-    voice: 'en-US-AndrewNeural',
+    scale: 1.82,
+    voice: 'en-US-JennyNeural', // clear, polished female coach voice
+    // Rice sample ships no expression files, but lipSync/idle are stable.
     expressions: {
-      confident: 'Smile',
-      thoughtful: 'exp_01',
-      surprised: 'Surprised',
-      amused: 'Smile',
-      firm: 'Angry',
-      happy: 'Smile',
-      neutral: 'Normal',
-      sad: 'Sad',
-      angry: 'Angry'
+      confident: null,
+      thoughtful: null,
+      surprised: null,
+      amused: null,
+      firm: null,
+      happy: null,
+      neutral: null,
+      sad: null,
+      angry: null
+    }
+  },
+  // Ren — cooler opposition captain / tech debater. Darker outfit and sharper
+  // silhouette, with five expression files and native mouth parameter support.
+  ren: {
+    id: 'ren',
+    label: 'Ren · 反方队长',
+    blurb: 'WSC senior · tech & rebuttal track',
+    emoji: '⚡',
+    modelUrl: '/live2d/models/Ren/runtime/Ren.model3.json',
+    anchorX: 0.5,
+    anchorY: -0.02,
+    scale: 1.72,
+    voice: 'en-US-BrianNeural', // young, confident male voice
+    expressions: {
+      confident: 'exp_01',
+      thoughtful: 'exp_04',
+      surprised: 'exp_03',
+      amused: 'exp_02',
+      firm: 'exp_05',
+      happy: 'exp_02',
+      neutral: 'exp_01',
+      sad: 'exp_04',
+      angry: 'exp_05'
     }
   },
   // Hiyori — full-body kawaii junior. No expressions (sample doesn't ship
@@ -114,36 +137,12 @@ export const AVATARS: Record<AvatarId, AvatarConfig> = {
       angry: null
     }
   },
-  // Haru — mature female schoolgirl, 8 expressions (F01–F08), 26 motions.
-  // Provides a more grown-up female option alongside the junior Hiyori.
-  haru: {
-    id: 'haru',
-    label: 'Haru · 高年级',
-    blurb: 'WSC senior · varsity debater',
-    emoji: '🌷',
-    modelUrl: '/live2d/models/Haru/runtime/Haru.model3.json',
-    anchorX: 0.5,
-    anchorY: -0.05,
-    scale: 1.7,
-    voice: 'en-US-EmmaNeural', // composed female, slightly mature
-    expressions: {
-      confident: 'F01',
-      thoughtful: 'F03',
-      surprised: 'F05',
-      amused: 'F02',
-      firm: 'F07',
-      happy: 'F02',
-      neutral: 'F01',
-      sad: 'F08',
-      angry: 'F07'
-    }
-  }
 };
 
 export const AVATAR_LIST: AvatarConfig[] = [
   AVATARS.mao,
-  AVATARS.natori,
-  AVATARS.haru,
+  AVATARS.rice,
+  AVATARS.ren,
   AVATARS.hiyori
 ];
 

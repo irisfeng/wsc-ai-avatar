@@ -132,3 +132,27 @@ Observed result:
 - TypeScript check passed.
 - Vitest passed: 16 test files, 137 tests.
 - Current-stage verifier passed, including `/debate` HTTP 200 and `en-US-AnaNeural` TTS smoke.
+
+## 2026-05-24 — Avatar Lineup Refresh
+
+Scope:
+
+- Removed Natori and Haru from the visible avatar picker because their visual fit was weak.
+- Added Rice as the polished academy captain option with `en-US-JennyNeural`.
+- Added Ren as the cooler opposition / tech rebuttal captain option with `en-US-BrianNeural`.
+- Updated Live2D setup script so fresh installs download Rice and Ren assets.
+
+Verification run:
+
+```bash
+npm run typecheck
+npm test
+npm run verify:current
+```
+
+Observed result:
+
+- TypeScript check passed.
+- Vitest passed: 16 test files, 137 tests.
+- `en-US-JennyNeural` and `en-US-BrianNeural` returned TTS audio bytes in local API checks.
+- Current-stage verifier passed after clearing an unrelated stale process on port 3000.

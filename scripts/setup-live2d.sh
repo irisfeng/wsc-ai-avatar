@@ -65,6 +65,47 @@ for FN in mtn_01 mtn_02 mtn_03 mtn_04 sample_01 special_01 special_02 special_03
     -o "$MAO_DIR/motions/${FN}.motion3.json"
 done
 
+# ─── Rice (polished academy captain — replacement scholar avatar) ───
+RICE_REPO="$SAMPLES_BASE/Rice"
+RICE_DIR="$MODELS_DIR/Rice/runtime"
+echo "→ Downloading Rice sample model (academy captain — clean scholar fit)…"
+mkdir -p "$RICE_DIR/Rice.2048" "$RICE_DIR/motions"
+for FILE in Rice.model3.json Rice.moc3 Rice.physics3.json Rice.cdi3.json; do
+  echo "    $FILE"
+  curl -fsSL "$RICE_REPO/$FILE" -o "$RICE_DIR/$FILE"
+done
+for TEX in texture_00.png texture_01.png; do
+  echo "    Rice.2048/$TEX"
+  curl -fsSL "$RICE_REPO/Rice.2048/$TEX" -o "$RICE_DIR/Rice.2048/$TEX"
+done
+for MN in idle mtn_01 mtn_02 mtn_03; do
+  echo "    motions/${MN}.motion3.json"
+  curl -fsSL "$RICE_REPO/motions/${MN}.motion3.json" \
+    -o "$RICE_DIR/motions/${MN}.motion3.json"
+done
+
+# ─── Ren (cool opposition captain — replacement tech/rebuttal avatar) ─
+REN_REPO="$SAMPLES_BASE/Ren"
+REN_DIR="$MODELS_DIR/Ren/runtime"
+echo "→ Downloading Ren sample model (cool tech/rebuttal captain)…"
+mkdir -p "$REN_DIR/Ren.2048" "$REN_DIR/expressions" "$REN_DIR/motions"
+for FILE in Ren.model3.json Ren.moc3 Ren.physics3.json Ren.cdi3.json; do
+  echo "    $FILE"
+  curl -fsSL "$REN_REPO/$FILE" -o "$REN_DIR/$FILE"
+done
+echo "    Ren.2048/texture_00.png"
+curl -fsSL "$REN_REPO/Ren.2048/texture_00.png" -o "$REN_DIR/Ren.2048/texture_00.png"
+for I in 01 02 03 04 05; do
+  echo "    expressions/exp_${I}.exp3.json"
+  curl -fsSL "$REN_REPO/expressions/exp_${I}.exp3.json" \
+    -o "$REN_DIR/expressions/exp_${I}.exp3.json"
+done
+for MN in mtn_01 mtn_02 mtn_03; do
+  echo "    motions/${MN}.motion3.json"
+  curl -fsSL "$REN_REPO/motions/${MN}.motion3.json" \
+    -o "$REN_DIR/motions/${MN}.motion3.json"
+done
+
 # ─── Natori (male, formal, 11 expressions — top WSC senior fit) ────
 NATORI_REPO="$SAMPLES_BASE/Natori"
 NATORI_DIR="$MODELS_DIR/Natori/runtime"
@@ -122,5 +163,5 @@ for WAV in haru_talk_13 haru_Info_14 haru_normal_6 haru_Info_04; do
 done
 
 echo "✓ Live2D assets installed under $TARGET"
-echo "  Avatars: Mao (creative) · Natori (formal male) · Hiyori (junior peer)"
+echo "  Avatars: Mao (creative) · Rice (academy captain) · Ren (opposition captain) · Hiyori (junior peer)"
 echo "  Replace with your own licensed model for production use."
