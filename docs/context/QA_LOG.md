@@ -42,3 +42,21 @@ Remaining manual gaps:
 Current-stage acceptance document:
 
 `docs/superpowers/specs/2026-05-23-current-stage-test-acceptance.html`
+
+## Current-Stage Verifier
+
+Command:
+
+```bash
+npm run verify:current
+```
+
+Expected checks:
+
+- TypeScript passes.
+- Vitest passes.
+- Local dev server starts.
+- `/debate` returns HTTP 200.
+- `/api/tts` returns audio bytes for `en-US-AnaNeural`.
+
+This verifier intentionally does not call the LLM provider. Use `npm run smoke` when a deeper provider-backed check is needed.

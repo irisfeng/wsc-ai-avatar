@@ -43,15 +43,15 @@ Record current baseline verification, known warnings, and remaining manual gaps.
 - Modify: `package.json`
 - Optional create: `tests/currentStageSmoke.test.ts`
 
-- [ ] **Step 1: Add a shell verifier**
+- [x] **Step 1: Add a shell verifier**
 
 Run typecheck, unit tests, and a local TTS smoke check against the dev server.
 
-- [ ] **Step 2: Add npm script**
+- [x] **Step 2: Add npm script**
 
 Expose the verifier as `npm run verify:current`.
 
-- [ ] **Step 3: Document verifier output**
+- [x] **Step 3: Document verifier output**
 
 Update `docs/context/QA_LOG.md` with the command and expected pass/fail signals.
 

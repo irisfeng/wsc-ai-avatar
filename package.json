@@ -11,6 +11,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "smoke": "bash scripts/smoke.sh",
+    "verify:current": "bash scripts/verify-current-stage.sh",
     "setup:live2d": "bash scripts/setup-live2d.sh",
     "test": "vitest run",
     "test:watch": "vitest",
