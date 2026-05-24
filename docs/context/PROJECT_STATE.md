@@ -11,7 +11,7 @@ Build a usable AI audio/video conversation app prototype for World Scholar's Cup
 The primary experience is `/debate`:
 
 - Pika-style Live2D call surface with avatar picker, call controls, captions, and self-view chrome.
-- Avatar lineup currently prioritizes Mao, Rice, Ren, and Hiyori. Natori/Haru assets may remain in the repo as downloaded samples, but they are no longer exposed in the picker because their visual fit is weak for this product.
+- Avatar picker is intentionally limited to Mao and Hiyori until we add custom or licensed Live2D assets. Natori/Haru/Rice had weak visual fit; Ren's `.moc3` failed with the current Cubism 4 runtime.
 - Browser microphone input through Web Speech API.
 - Text-to-LLM flow through `/api/chat`, using the configured provider in `.env.local`.
 - Streaming AI opponent responses.

@@ -6,7 +6,7 @@
 
 import type { ParsedSpeech } from '@/lib/parseEmotion';
 
-export type AvatarId = 'mao' | 'rice' | 'ren' | 'hiyori';
+export type AvatarId = 'mao' | 'hiyori';
 
 export interface AvatarConfig {
   id: AvatarId;
@@ -62,55 +62,6 @@ export const AVATARS: Record<AvatarId, AvatarConfig> = {
       angry: 'exp_07'
     }
   },
-  // Rice — polished academy captain. Clean blue/white uniform, long silver
-  // hair, and a calmer "senior scholar" read than Haru/Natori.
-  rice: {
-    id: 'rice',
-    label: 'Rice · 学院队长',
-    blurb: 'WSC senior · strategy captain',
-    emoji: '📘',
-    modelUrl: '/live2d/models/Rice/runtime/Rice.model3.json',
-    anchorX: 0.5,
-    anchorY: -0.05,
-    scale: 1.82,
-    voice: 'en-US-JennyNeural', // clear, polished female coach voice
-    // Rice sample ships no expression files, but lipSync/idle are stable.
-    expressions: {
-      confident: null,
-      thoughtful: null,
-      surprised: null,
-      amused: null,
-      firm: null,
-      happy: null,
-      neutral: null,
-      sad: null,
-      angry: null
-    }
-  },
-  // Ren — cooler opposition captain / tech debater. Darker outfit and sharper
-  // silhouette, with five expression files and native mouth parameter support.
-  ren: {
-    id: 'ren',
-    label: 'Ren · 反方队长',
-    blurb: 'WSC senior · tech & rebuttal track',
-    emoji: '⚡',
-    modelUrl: '/live2d/models/Ren/runtime/Ren.model3.json',
-    anchorX: 0.5,
-    anchorY: -0.02,
-    scale: 1.72,
-    voice: 'en-US-BrianNeural', // young, confident male voice
-    expressions: {
-      confident: 'exp_01',
-      thoughtful: 'exp_04',
-      surprised: 'exp_03',
-      amused: 'exp_02',
-      firm: 'exp_05',
-      happy: 'exp_02',
-      neutral: 'exp_01',
-      sad: 'exp_04',
-      angry: 'exp_05'
-    }
-  },
   // Hiyori — full-body kawaii junior. No expressions (sample doesn't ship
   // any), but lipSync works fine.
   hiyori: {
@@ -141,8 +92,6 @@ export const AVATARS: Record<AvatarId, AvatarConfig> = {
 
 export const AVATAR_LIST: AvatarConfig[] = [
   AVATARS.mao,
-  AVATARS.rice,
-  AVATARS.ren,
   AVATARS.hiyori
 ];
 

@@ -156,3 +156,20 @@ Observed result:
 - Vitest passed: 16 test files, 137 tests.
 - `en-US-JennyNeural` and `en-US-BrianNeural` returned TTS audio bytes in local API checks.
 - Current-stage verifier passed after clearing an unrelated stale process on port 3000.
+
+## 2026-05-24 — Avatar Lineup Rollback
+
+Scope:
+
+- Removed Rice and Ren from the visible avatar picker.
+- Rice loaded but its default body angle and framing were not suitable for the video-call composition.
+- Ren failed at `CubismMoc.create()` with the current Cubism 4 runtime.
+- Current stable picker is intentionally limited to Mao and Hiyori until custom or licensed Live2D assets are available.
+
+Verification target:
+
+```bash
+npm run typecheck
+npm test
+npm run verify:current
+```
